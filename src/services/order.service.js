@@ -2,7 +2,7 @@ import axios from 'axios';
 import AuthService from './auth.service'; // To get the auth header
 
 // Adjust the base URL to your backend server's address and port
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api/orders/`;
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/orders/`;
 
 class OrderService {
   // Get all orders (with optional filters)
@@ -19,16 +19,19 @@ class OrderService {
     return axios.get(API_URL + id, { headers: AuthService.getAuthHeader() });
   }
 
-  // Update shipping prep details for an order
-  // data should include { package_type, package_length?, package_width?, package_height?, total_weight_oz? }
-  updateShippingPrep(id, data) {
-    return axios.put(API_URL + id + '/shipping-prep', data, { headers: AuthService.getAuthHeader() });
+  // Update shipping manifest details for a group order
+  updateShippingManifest(group_order_id, data) {
+    return axios.put(API_URL + 'shipment-manifest/' + group_order_id, data, { headers: AuthService.getAuthHeader() });
   }
 
   // Update payment status for an order
   // status should be one of the allowed values ('Paid', 'Cancelled', etc.)
   updatePaymentStatus(id, status) {
     return axios.put(API_URL + id + '/payment-status', { payment_status: status }, { headers: AuthService.getAuthHeader() });
+  }
+
+  triggerPaymentVerification(id) {
+    return axios.post(API_URL + id + '/trigger-payment-verification', {}, { headers: AuthService.getAuthHeader() });
   }
 
   // Export orders as CSV
@@ -55,6 +58,9 @@ class OrderService {
     window.URL.revokeObjectURL(url);
   }
 
+  getShipmentManifest(group_order_id) {
+    return axios.get(API_URL + 'shipment-manifest/' + group_order_id, { headers: AuthService.getAuthHeader() });
+  }
 }
 
 export default new OrderService();

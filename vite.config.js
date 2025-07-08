@@ -14,6 +14,7 @@ export default defineConfig({
     historyApiFallback: true,
     // Optional: Define the port if needed, default is 5173
     // port: 5173,
+    host: true, // Add this line to listen on all interfaces
     allowedHosts: true,
   }
 })

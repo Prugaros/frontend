@@ -183,7 +183,6 @@ const OrderList = () => {
                 <th>Total</th>
                 <th>Payment</th>
                 <th>Shipping</th>
-                <th>Package</th>
                 <th>Actions</th>
                 </tr>
             </thead>
@@ -197,7 +196,6 @@ const OrderList = () => {
                     <td>${order.total_amount?.toFixed(2)}</td>
                     <td>{order.payment_status}</td>
                     <td>{order.shipping_status || 'Pending'}</td>
-                    <td>{order.package_type || '-'}</td>
                     <td>
                     <Link to={`/orders/${order.id}`} className="btn btn-sm btn-info me-2">View/Prep</Link>
                     {/* TODO: Add other actions like Mark Paid */}

@@ -1,20 +1,39 @@
+// require('dotenv').config();
 import axios from 'axios';
 
 // Adjust the base URL to your backend server's address and port
-// Use the BACKEND URL for API calls from the webview
-const API_URL = 'https://0660-2601-2c5-200-9ae0-7c71-1414-2012-b8b.ngrok-free.app/api/webview/';
+// Use the BACKEND_URL to construct the backend API URL
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/webview/`;
+
+// Add a request interceptor to skip the ngrok browser warning
+axios.interceptors.request.use(config => {
+  config.headers['ngrok-skip-browser-warning'] = 'any-value';
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
 
 class WebviewService {
-  // Get initial data for the webview (products, current cart)
-  getOrderData(psid) {
+  getOrderData(psid, filters = {}) {
     // No auth header needed here, assuming PSID is sufficient for context
-    return axios.get(API_URL + 'order-data', { params: { psid } });
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      }
+    };
+    return axios.get(API_URL + 'order-data', { params: { psid, ...filters }, ...config });
   }
 
   // Send updated cart data back to the backend
   // items should be an object like { productId: quantity, ... }
   updateCart(psid, items) {
-    return axios.post(API_URL + 'update-cart', { items }, { params: { psid } });
+     const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      },
+      params: { psid }
+    };
+    return axios.post(API_URL + 'update-cart', items, config);
   }
 
 }

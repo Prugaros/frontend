@@ -2,7 +2,7 @@ import axios from 'axios';
 import AuthService from './auth.service'; // To get the auth header
 
 // Adjust the base URL to your backend server's address and port
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api/group-orders/`;
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/group-orders/`;
 
 class GroupOrderService {
   // Get all group orders

@@ -1,0 +1,51 @@
+/* Mobile Responsiveness (Example - adjust as needed) */
+@media (max-width: 768px) {
+  .table {
+    width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling */
+  }
+}
+
+.product-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.product-image {
+  max-width: 100px;
+  margin-right: 10px;
+}
+
+.product-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.product-details li {
+  margin-bottom: 5px;
+}
+
+.product-details li:last-child {
+  display: flex;
+  align-items: center;
+}
+
+.product-details li:last-child input {
+  margin-left: 5px;
+  width: 50px; /* Adjust width as needed */
+}
+
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 100; /* Ensure it stays on top */
+}
+
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 100; /* Ensure it stays on top */
+  padding-bottom: 10px;
+}

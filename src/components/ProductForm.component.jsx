@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ProductService from '../services/product.service';
+import CollectionService from '../services/collection.service';
 import { useParams, useNavigate } from 'react-router-dom';
+import StockManagement from './StockManagement';
 
 const ProductForm = () => {
   const { id } = useParams(); // Get ID from URL for editing
@@ -18,18 +20,31 @@ const ProductForm = () => {
   const [product, setProduct] = useState(initialProductState);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [collections, setCollections] = useState([]);
 
   useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const response = await CollectionService.getAll();
+        setCollections(response.data);
+      } catch (error) {
+        console.error("Error fetching collections:", error);
+        setMessage("Error fetching collections: " + (error.response?.data?.message || error.message));
+      }
+    };
+
+    fetchCollections();
+
     if (isEditing) {
       setLoading(true);
       ProductService.get(id)
         .then(response => {
           setProduct({
-              ...response.data,
-              price: response.data.price || '', // Handle potential null values from DB
-              weight_oz: response.data.weight_oz || '',
-              image_url: response.data.image_url || '',
-              description: response.data.description || '',
+            ...response.data,
+            price: response.data.price || '', // Handle potential null values from DB
+            weight_oz: response.data.weight_oz || '',
+            image_url: response.data.image_url || '',
+            description: response.data.description || '',
           });
           setLoading(false);
         })
@@ -38,8 +53,8 @@ const ProductForm = () => {
           setLoading(false);
         });
     } else {
-        // Reset to initial state if navigating from edit to new
-        setProduct(initialProductState);
+      // Reset to initial state if navigating from edit to new
+      setProduct(initialProductState);
     }
   }, [id, isEditing]); // Re-run if ID changes (navigating between edit/new)
 
@@ -58,6 +73,7 @@ const ProductForm = () => {
         ...product,
         price: parseFloat(product.price) || 0, // Default to 0 if invalid
         weight_oz: product.weight_oz ? parseFloat(product.weight_oz) : null,
+        collectionId: product.collectionId === '' ? null : parseInt(product.collectionId),
         // image_url handling might need adjustment if implementing file uploads
     };
 
@@ -109,6 +125,22 @@ const ProductForm = () => {
             <label className="form-check-label" htmlFor="is_active">Active (available for new group orders)</label>
         </div>
 
+        <div className="mb-3">
+          <label htmlFor="collectionId" className="form-label">Collection</label>
+          <select
+            className="form-control"
+            id="collectionId"
+            name="collectionId"
+            value={product.collectionId || ''}
+            onChange={handleInputChange}
+          >
+            <option value="">No Collection</option>
+            {collections.map(collection => (
+              <option key={collection.id} value={collection.id}>{collection.Name}</option>
+            ))}
+          </select>
+        </div>
+
         {message && <div className="alert alert-danger">{message}</div>}
 
         <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -118,6 +150,9 @@ const ProductForm = () => {
           Cancel
         </button>
       </form>
+      {isEditing && (
+        <StockManagement productId={id} />
+      )}
     </div>
   );
 };

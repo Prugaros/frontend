@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Adjust the base URL to your backend server's address and port
 // Make sure it matches the port defined in your backend's .env file (e.g., 3001)
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api/auth/`;
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/auth/`;
 
 class AuthService {
   async login(username, password) {

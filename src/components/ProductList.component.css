@@ -1,0 +1,7 @@
+/* Mobile Responsiveness (Example - adjust as needed) */
+@media (max-width: 768px) {
+  .table {
+    width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling */
+  }
+}

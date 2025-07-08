@@ -1,34 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import WebviewService from '../services/webview.service';
+import './MessengerOrder.component.css';
+import _ from 'lodash';
 
 // Helper to parse query params
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
-
-// Function to load FB SDK
-const loadFbSdk = () => {
-  return new Promise((resolve) => {
-    if (window.FB) {
-      resolve();
-      return;
-    }
-    window.fbAsyncInit = function() {
-      // No need to init if only using MessengerExtensions
-      console.log('FB SDK loaded');
-      resolve();
-    };
-    (function(d, s, id){
-       var js, fjs = d.getElementsByTagName(s)[0];
-       if (d.getElementById(id)) {return;}
-       js = d.createElement(s); js.id = id;
-       js.src = "https://connect.facebook.net/en_US/sdk.js";
-       fjs.parentNode.insertBefore(js, fjs);
-     }(document, 'script', 'facebook-jssdk'));
-  });
-};
-
 
 const MessengerOrder = () => {
   const query = useQuery();
@@ -41,12 +20,15 @@ const MessengerOrder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
-  // Load FB SDK on mount
-  useEffect(() => {
-    loadFbSdk().then(() => setSdkLoaded(true));
-  }, []);
+  // Debounce search term changes
+  const debouncedSetSearchTerm = useCallback(
+    _.debounce(value => {
+      setSearchTerm(value);
+    }, 300), []
+  );
 
   // Fetch initial data
   const fetchData = useCallback(() => {
@@ -57,14 +39,16 @@ const MessengerOrder = () => {
     }
     setLoading(true);
     setError('');
-    WebviewService.getOrderData(psid)
+
+    WebviewService.getOrderData(psid, {})
       .then(response => {
         setGroupOrderName(response.data.groupOrderName);
         setProducts(response.data.products);
+        setFilteredProducts(response.data.products); // Initialize filtered products
         // Initialize cart state from backend data
         const initialCart = {};
         Object.entries(response.data.currentCart || {}).forEach(([productId, itemData]) => {
-            initialCart[productId] = itemData.quantity;
+          initialCart[productId] = itemData.quantity;
         });
         setCart(initialCart);
         setLoading(false);
@@ -79,6 +63,14 @@ const MessengerOrder = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]); // Fetch data when component mounts or psid changes
+
+  useEffect(() => {
+    const filtered = products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.collection && product.collection.Name && product.collection.Name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
 
   const handleQuantityChange = (productId, newQuantity) => {
     const quantity = parseInt(newQuantity);
@@ -95,23 +87,19 @@ const MessengerOrder = () => {
   };
 
   const calculateTotal = () => {
-      let total = 0;
-      products.forEach(p => {
-          if (cart[p.id]) {
-              total += parseFloat(p.price) * cart[p.id];
-          }
-      });
-      return total.toFixed(2);
+    let total = 0;
+    filteredProducts.forEach(p => {
+      if (cart[p.id]) {
+        total += parseFloat(p.price) * cart[p.id];
+      }
+    });
+    return total.toFixed(2);
   };
 
   const handleSaveAndClose = () => {
     if (!psid) {
-        setError("Cannot save cart: User ID (PSID) is missing.");
-        return;
-    }
-    if (!sdkLoaded) {
-        setError("Cannot close window: Facebook SDK not loaded yet.");
-        return;
+      setError("Cannot save cart: User ID (PSID) is missing.");
+      return;
     }
 
     setIsSaving(true);
@@ -120,25 +108,26 @@ const MessengerOrder = () => {
     // Filter out zero quantities before sending
     const itemsToSave = {};
     Object.entries(cart).forEach(([productId, quantity]) => {
-        if (quantity > 0) {
-            itemsToSave[productId] = quantity;
-        }
+      if (quantity > 0) {
+        itemsToSave[String(productId)] = quantity; // Convert productId to string
+      }
     });
 
-    WebviewService.updateCart(psid, itemsToSave)
+    WebviewService.updateCart(psid, { items: itemsToSave })
       .then(() => {
-        console.log("Cart updated, closing webview...");
-        // Close webview using Messenger Extensions SDK
-        window.MessengerExtensions.requestCloseBrowser(function success() {
-           console.log("Webview closed successfully");
-        }, function error(err) {
-           console.error("Error closing webview:", err);
-           // Show error to user if closing fails?
-           setError("Could not close window automatically. Please close it manually.");
-           setIsSaving(false); // Allow retry?
-        });
-        // Note: The success/error callbacks might not fire reliably in all environments.
-        // The window might close before the backend response is fully processed sometimes.
+        console.log("Cart updated.");
+        setIsSaving(false);
+        setError("Your selections have been saved. Please close this window to return to Messenger.");
+
+        if (window.MessengerExtensions) {
+          window.MessengerExtensions.requestCloseBrowser(function success() {
+            // webview closed
+          }, function error(err) {
+            console.error(err);
+          });
+        } else {
+          console.log("Messenger Extensions not available.");
+        }
       })
       .catch(e => {
         setError(e.response?.data?.message || e.message || "Error saving cart.");
@@ -147,63 +136,92 @@ const MessengerOrder = () => {
       });
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Group products by Collection
+  const groupedProducts = filteredProducts.reduce((groups, product) => {
+    const collection = product.collection ? product.collection.Name : 'Uncategorized';
+    if (!groups[collection]) {
+      groups[collection] = [];
+    }
+    groups[collection].push(product);
+    return groups;
+  }, {});
+
+  // Sort collections by DisplayOrder
+  const sortedCollections = Object.keys(groupedProducts).sort((a, b) => {
+    const collectionA = products.find(p => p.collection && p.collection.Name === a)?.collection;
+    const collectionB = products.find(p => p.collection && p.collection.Name === b)?.collection;
+
+    if (!collectionA && !collectionB) {
+      return a.localeCompare(b); // Sort alphabetically if DisplayOrder is not available
+    } else if (!collectionA) {
+      return 1; // Move items without DisplayOrder to the end
+    } else if (!collectionB) {
+      return -1;
+    } else {
+      return (collectionA.DisplayOrder || 0) - (collectionB.DisplayOrder || 0); // Sort by DisplayOrder, default to 0 if null
+    }
+  });
+
   if (loading) return <div className="container mt-3"><p>Loading order details...</p></div>;
-  if (error && !products.length) return <div className="container mt-3"><div className="alert alert-danger">{error}</div></div>; // Show only error if loading failed completely
+  if (error && !filteredProducts.length) return <div className="container mt-3"><div className="alert alert-danger">{error}</div></div>; // Show only error if loading failed completely
 
   return (
-    <div className="container mt-3 mb-5">
+    <div className="container">
       <h3>{groupOrderName || 'Order Items'}</h3>
+
+      {/* Search Bar */}
+      <div className="mb-3 sticky-top">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Search by name"
+          onChange={handleSearchChange}
+          style={{ width: '200px' }}
+        />
+      </div>
+
       <p>Adjust quantities below. Set quantity to 0 to remove an item.</p>
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <table className="table table-sm">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Price</th>
-            <th style={{width: '100px'}}>Quantity</th>
-            <th>Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(product => (
-            <tr key={product.id}>
-              <td>
-                {product.name}
-                {product.image_url && <img src={product.image_url} alt={product.name} style={{maxWidth: '50px', marginLeft: '10px', verticalAlign: 'middle'}} />}
-              </td>
-              <td>${parseFloat(product.price).toFixed(2)}</td>
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  min="0"
-                  value={cart[product.id] || 0}
-                  onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                  style={{ width: '80px', textAlign: 'center' }}
-                />
-              </td>
-               <td>${(parseFloat(product.price) * (cart[product.id] || 0)).toFixed(2)}</td>
-            </tr>
+      {sortedCollections.map(collection => (
+        <div key={collection} className="mb-4">
+          <h4>{collection}</h4>
+          {groupedProducts[collection].map(product => (
+            <div key={product.id} className="product-container">
+              {product.image_url && <img src={product.image_url} alt={product.name} className="product-image" />}
+              <ul className="product-details">
+                <li>{product.name}</li>
+                <li>Price: ${parseFloat(product.price).toFixed(2)}</li>
+                <li>
+                  Quantity:
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    min="0"
+                    value={cart[product.id] || 0}
+                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                    style={{ width: '80px', textAlign: 'center', display: 'inline-block', marginLeft: '10px' }}
+                  />
+                </li>
+              </ul>
+            </div>
           ))}
-        </tbody>
-         <tfoot>
-            <tr>
-                <th colSpan="3" style={{textAlign: 'right'}}>Estimated Item Total:</th>
-                <th>${calculateTotal()}</th>
-            </tr>
-        </tfoot>
-      </table>
+        </div>
+      ))}
 
-      <div className="mt-3 d-grid">
+      <div className="mt-3 d-grid sticky-bottom">
         <button
           className="btn btn-primary"
           onClick={handleSaveAndClose}
-          disabled={isSaving || !sdkLoaded}
+          disabled={isSaving}
         >
           {isSaving ? 'Saving...' : 'Save Selections & Close'}
         </button>
-         {!sdkLoaded && <small className="text-muted text-center mt-1">Waiting for Facebook SDK...</small>}
+        {error && <div className="alert alert-danger">{error}</div>}
       </div>
     </div>
   );

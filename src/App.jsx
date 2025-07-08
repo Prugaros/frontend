@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import ShipmentIntake from './components/ShipmentIntake.jsx';
 import AuthService from './services/auth.service';
 import Login from './components/Login.component.jsx';
-// Import actual components
-import ProductList from './components/ProductList.component.jsx';
+import ProductListTable from './components/ProductListTable.component.jsx';
 import ProductForm from './components/ProductForm.component.jsx';
+import CollectionList from './components/CollectionList.component.jsx';
+import CollectionForm from './components/CollectionForm.component.jsx';
 import GroupOrderList from './components/GroupOrderList.component.jsx';
 import GroupOrderForm from './components/GroupOrderForm.component.jsx';
 import OrderList from './components/OrderList.component.jsx';
 import OrderDetail from './components/OrderDetail.component.jsx';
-import MessengerOrder from './components/MessengerOrder.component.jsx'; // Import MessengerOrder
+import MessengerOrder from './components/MessengerOrder.component.jsx';
+import PurchaseList from './components/PurchaseList.component.jsx';
+import GroupOrderPurchaseList from './components/GroupOrderPurchaseList.component.jsx';
+import PurchaseOrderList from './components/PurchaseOrderList.component.jsx';
+import InStockProducts from './components/InStockProducts.jsx';
+import ShipmentManifest from './components/ShipmentManifest.component.jsx';
+import PackingOrders from './components/PackingOrders.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -43,95 +51,118 @@ function App() {
 
 
   return (
-    <Router>
-      <div>
-        {/* Hide Nav for the messenger webview route? Or adjust layout */}
-        {/* We might need a way to detect if it's in the webview */}
-        <nav className="navbar navbar-expand navbar-dark bg-dark">
-          <Link to={"/"} className="navbar-brand">
-            SCG Bot Admin
-          </Link>
-          <div className="navbar-nav mr-auto">
-            {currentUser && (
-              <>
+    <div>
+      {/* Hide Nav for the messenger webview route? Or adjust layout */}
+      {/* We might need a way to detect if it's in the webview */}
+      {useLocation().pathname !== '/messenger-order' ? (
+        <>
+          <nav className="navbar navbar-expand navbar-dark bg-dark">
+            <Link to={"/"} className="navbar-brand">
+              SCG Bot Admin
+            </Link>
+            <div className="navbar-nav mr-auto">
+              {currentUser && (
+                <>
+                  <li className="nav-item">
+                    <Link to={"/dashboard"} className="nav-link">
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to={"/products"} className="nav-link">
+                      Products
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to={"/group-orders"} className="nav-link">
+                      Group Orders
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to={"/orders"} className="nav-link">
+                      Orders
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to={"/collections"} className="nav-link">
+                      Collections
+                    </Link>
+                  </li>
+                  
+                   <li className="nav-item">
+                    <Link to={"/in-stock"} className="nav-link">
+                      In Stock
+                    </Link>
+                  </li>
+                </>
+              )}
+            </div>
+
+            {currentUser ? (
+              <div className="navbar-nav ms-auto">
                 <li className="nav-item">
-                  <Link to={"/dashboard"} className="nav-link">
-                    Dashboard
-                  </Link>
+                  <span className="nav-link">
+                    {currentUser.username}
+                  </span>
                 </li>
                 <li className="nav-item">
-                  <Link to={"/products"} className="nav-link">
-                    Products
-                  </Link>
+                  <a href="/login" className="nav-link" onClick={logOut}>
+                    LogOut
+                  </a>
                 </li>
-                 <li className="nav-item">
-                  <Link to={"/group-orders"} className="nav-link">
-                    Group Orders
-                  </Link>
-                </li>
+              </div>
+            ) : (
+              <div className="navbar-nav ms-auto">
                 <li className="nav-item">
-                 <Link to={"/orders"} className="nav-link">
-                   Orders
-                 </Link>
-               </li>
-              </>
+                  <Link to={"/login"} className="nav-link">
+                    Login
+                  </Link>
+                </li>
+              </div>
             )}
-          </div>
+          </nav>
+        </>
+      ) : null}
 
-          {currentUser ? (
-            <div className="navbar-nav ms-auto">
-              <li className="nav-item">
-                <span className="nav-link">
-                  {currentUser.username}
-                </span>
-              </li>
-              <li className="nav-item">
-                <a href="/login" className="nav-link" onClick={logOut}>
-                  LogOut
-                </a>
-              </li>
-            </div>
-          ) : (
-            <div className="navbar-nav ms-auto">
-              <li className="nav-item">
-                <Link to={"/login"} className="nav-link">
-                  Login
-                </Link>
-              </li>
-            </div>
-          )}
-        </nav>
+      <div className="container mt-3">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          {/* Messenger Webview Route (Public) */}
+          <Route path="/messenger-order" element={<MessengerOrder />} />
 
-        <div className="container mt-3">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            {/* Messenger Webview Route (Public) */}
-            <Route path="/messenger-order" element={<MessengerOrder />} />
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />
+          {/* Product Routes */}
+          <Route path="/products" element={<ProtectedRoute> <ProductListTable /> </ProtectedRoute>} />
+          <Route path="/products/new" element={<ProtectedRoute> <ProductForm /> </ProtectedRoute>} />
+          <Route path="/products/edit/:id" element={<ProtectedRoute> <ProductForm /> </ProtectedRoute>} />
+          {/* Collection Routes */}
+          <Route path="/collections" element={<ProtectedRoute> <CollectionList /> </ProtectedRoute>} />
+          <Route path="/collections/new" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
+          <Route path="/collections/edit/:id" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
+          {/* Group Order Routes */}
+          <Route path="/group-orders" element={<ProtectedRoute> <GroupOrderList /> </ProtectedRoute>} />
+          <Route path="/group-orders/new" element={<ProtectedRoute> <GroupOrderForm /> </ProtectedRoute>} />
+          <Route path="/group-orders/edit/:id" element={<ProtectedRoute> <GroupOrderForm /> </ProtectedRoute>} />
+          {/* Order Routes */}
+          <Route path="/orders" element={<ProtectedRoute> <OrderList /> </ProtectedRoute>} />
+          <Route path="/orders/:id" element={<ProtectedRoute> <OrderDetail /> </ProtectedRoute>} />
+          {/* Purchase List Route */}
+          <Route path="/purchase-list" element={<ProtectedRoute><PurchaseList /></ProtectedRoute>} />
+          <Route path="/purchase-list/:groupOrderId" element={<ProtectedRoute><GroupOrderPurchaseList /></ProtectedRoute>} />
+          <Route path="/purchase-orders/:groupOrderId" element={<ProtectedRoute><PurchaseOrderList /></ProtectedRoute>} />
+          <Route path="/in-stock" element={<ProtectedRoute><InStockProducts /></ProtectedRoute>} />
+          <Route path="/shipment-intake/:groupOrderId" element={<ProtectedRoute><ShipmentIntake /></ProtectedRoute>} />
+          <Route path="/packing-orders/:group_order_id" element={<ProtectedRoute><PackingOrders /></ProtectedRoute>} />
+          <Route path="/shipment-manifest/:group_order_id" element={<ProtectedRoute><ShipmentManifest /></ProtectedRoute>} />
 
-
-            {/* Protected Routes */}
-            <Route path="/" element={ <ProtectedRoute> <Dashboard /> </ProtectedRoute> } />
-            <Route path="/dashboard" element={ <ProtectedRoute> <Dashboard /> </ProtectedRoute> } />
-            {/* Product Routes */}
-            <Route path="/products" element={ <ProtectedRoute> <ProductList /> </ProtectedRoute> } />
-            <Route path="/products/new" element={ <ProtectedRoute> <ProductForm /> </ProtectedRoute> } />
-            <Route path="/products/edit/:id" element={ <ProtectedRoute> <ProductForm /> </ProtectedRoute> } />
-            {/* Group Order Routes */}
-            <Route path="/group-orders" element={ <ProtectedRoute> <GroupOrderList /> </ProtectedRoute> } />
-            <Route path="/group-orders/new" element={ <ProtectedRoute> <GroupOrderForm /> </ProtectedRoute> } />
-            <Route path="/group-orders/edit/:id" element={ <ProtectedRoute> <GroupOrderForm /> </ProtectedRoute> } />
-            {/* Order Routes */}
-            <Route path="/orders" element={ <ProtectedRoute> <OrderList /> </ProtectedRoute> } />
-            <Route path="/orders/:id" element={ <ProtectedRoute> <OrderDetail /> </ProtectedRoute> } />
-
-             {/* Redirect unknown protected paths to dashboard, others to login */}
-             <Route path="*" element={currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
-
-          </Routes>
-        </div>
+          {/* Redirect unknown protected paths to dashboard, others to login */}
+          <Route path="*" element={currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
+        </Routes>
       </div>
-    </Router>
+    </div>
   );
 }
 

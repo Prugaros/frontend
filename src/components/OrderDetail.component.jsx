@@ -82,18 +82,26 @@ const OrderDetail = () => {
 
   // Handler for marking order as Paid
   const handleMarkAsPaid = () => {
-      setIsUpdatingPayment(true);
-      setPaymentMessage('');
-      OrderService.updatePaymentStatus(id, 'Paid')
+    setIsUpdatingPayment(true);
+    setPaymentMessage('');
+    OrderService.updatePaymentStatus(id, 'Paid')
+      .then(() => {
+        setPaymentMessage('Order marked as Paid successfully!');
+        setIsUpdatingPayment(false);
+        // Call backend to trigger payment verification
+        OrderService.triggerPaymentVerification(id)
           .then(() => {
-              setPaymentMessage('Order marked as Paid successfully!');
-              setIsUpdatingPayment(false);
-              retrieveOrder(); // Re-fetch order data to show updated status
+            navigate('/orders');
           })
           .catch(e => {
-              setPaymentMessage(e.response?.data?.message || e.message || 'Error marking order as Paid.');
-              setIsUpdatingPayment(false);
+            setPaymentMessage(e.response?.data?.message || e.message || 'Error triggering payment verification.');
+            retrieveOrder(); // Re-fetch order data to show updated status
           });
+      })
+      .catch(e => {
+        setPaymentMessage(e.response?.data?.message || e.message || 'Error marking order as Paid.');
+        setIsUpdatingPayment(false);
+      });
   };
 
 
@@ -154,7 +162,7 @@ const OrderDetail = () => {
          <tbody>
            {order.orderItems?.map((item) => (
              <tr key={item.id}>
-               <td>{item.product?.name || 'N/A'} (ID: {item.product_id})</td>
+               <td>{item.orderProduct?.name || 'N/A'} (ID: {item.product_id})</td>
                <td>{item.quantity}</td>
                <td>${item.price_at_order_time?.toFixed(2)}</td>
                <td>${(item.price_at_order_time * item.quantity).toFixed(2)}</td>

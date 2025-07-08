@@ -114,13 +114,27 @@ const GroupOrderList = () => {
                 <td>{order.products?.length || 0}</td>
                 <td>{order.facebook_post_id || '-'}</td>
                 <td>
-                  <Link to={`/group-orders/edit/${order.id}`} className="btn btn-sm btn-warning me-2">Edit</Link>
                   {order.status === 'Draft' &&
                     <button onClick={() => startGroupOrder(order.id)} className="btn btn-sm btn-success me-2">Start</button>
                   }
-                  {order.status === 'Active' &&
+                  {order.status === 'Active' && (
                     <button onClick={() => endGroupOrder(order.id)} className="btn btn-sm btn-secondary me-2">End</button>
-                  }
+                  )}
+                  <button onClick={() => {}} className="btn btn-sm btn-info me-2">
+                    <Link to={`/purchase-list/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Purchase</Link>
+                  </button>
+                  <button className="btn btn-sm btn-info me-2">
+                    <Link to={`/shipment-intake/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Stock</Link>
+                  </button>
+                  <button className="btn btn-sm btn-info me-2">
+                    <Link to={`/packing-orders/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Pack</Link>
+                  </button>
+                  <button className="btn btn-sm btn-info me-2">
+                    <Link to={`/shipment-manifest/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Manifest</Link>
+                  </button>
+                  <button className="btn btn-sm btn-info me-2">
+                    <Link to={`/group-orders/edit/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Edit</Link>
+                  </button>
                   {/* Allow delete only if Draft? Or handle constraints in backend */}
                   <button onClick={() => deleteGroupOrder(order.id)} className="btn btn-sm btn-danger">Delete</button>
                 </td>
