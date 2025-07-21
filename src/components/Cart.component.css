@@ -6,46 +6,6 @@
   color: #e0e0e0; /* Light text color */
 }
 
-/* Sticky elements */
-.sticky-top {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background-color: #3a3a3a; /* Darker background for sticky header */
-  padding: 10px 0;
-  border-bottom: 1px solid #444;
-}
-
-.sticky-bottom {
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-  background-color: #3a3a3a; /* Darker background for sticky footer */
-  padding: 10px 0;
-  border-top: 1px solid #444;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
-}
-
-/* Search Bar */
-.search-bar-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.search-bar-container .form-control {
-  max-width: 300px;
-  border-radius: 20px;
-  padding-left: 15px;
-  background-color: #4a4a4a; /* Darker input background */
-  color: #e0e0e0; /* Light text color */
-  border: 1px solid #555;
-}
-
-.search-bar-container .form-control::placeholder {
-  color: #bbb; /* Lighter placeholder text */
-}
-
 /* Product Container */
 .product-container {
   display: flex;
@@ -90,23 +50,9 @@
 }
 
 .product-details li:last-child {
-  /* This was for the old inline quantity, now handled by .quantity-section-inline */
-  /* display: flex; */
-  /* align-items: center; */
-  margin-top: 8px;
-}
-
-/* New inline quantity section for product list */
-.quantity-section-inline {
   display: flex;
   align-items: center;
   margin-top: 8px;
-}
-
-.quantity-section-inline label {
-  margin-right: 10px;
-  font-weight: bold;
-  color: #e0e0e0;
 }
 
 /* Quantity Controls */
@@ -144,17 +90,8 @@
   border-right: 1px solid #555;
 }
 
-/* Collection Headers */
-h4 {
-  margin-top: 25px;
-  margin-bottom: 15px;
-  color: #8ab4f8; /* A distinct, light blue color for headers */
-  border-bottom: 2px solid #8ab4f8;
-  padding-bottom: 5px;
-}
-
 /* Total display */
-.order-total {
+.cart-total {
   font-size: 1.2rem;
   font-weight: bold;
   text-align: right;
@@ -179,31 +116,31 @@ h4 {
   border-color: #a6c8ff;
 }
 
-.btn-secondary {
-  margin-top: 10px;
-  background-color: #5f6368; /* Dark grey for secondary button */
-  border-color: #5f6368;
-  color: #e0e0e0; /* Light text */
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: #e0e0e0; /* Light text for danger button */
   padding: 8px 15px;
   font-size: 1rem;
   border-radius: 5px;
 }
 
-.btn-secondary:hover {
-  background-color: #70757a;
-  border-color: #70757a;
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
 }
 
-/* Text muted for descriptions */
-.text-muted {
-  color: #b0b0b0 !important; /* Lighter grey for muted text */
-}
-
-/* Alert danger for errors */
-.alert-danger {
-  background-color: #dc3545;
-  color: #fff;
-  border-color: #dc3545;
+/* Sticky Bottom Buttons */
+.sticky-bottom-buttons {
+  position: sticky;
+  bottom: 0;
+  z-index: 1000; /* Ensure it stays on top of other content */
+  width: 100%; /* Ensure it spans the full width */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  display: flex; /* Explicitly set display to flex */
+  flex-direction: row; /* Ensure items are in a row */
+  flex-wrap: nowrap; /* Prevent wrapping to new lines */
+  align-items: center; /* Vertically align items in the center */
 }
 
 /* Mobile Responsiveness */

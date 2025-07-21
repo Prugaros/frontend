@@ -36,6 +36,16 @@ class WebviewService {
     return axios.post(API_URL + 'update-cart', items, config);
   }
 
+  finalizeOrder(psid) {
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      },
+      params: { psid }
+    };
+    // No request body needed for finalize-order, as it uses existing cart data from customer state
+    return axios.post(API_URL + 'finalize-order', {}, config);
+  }
 }
 
 export default new WebviewService();

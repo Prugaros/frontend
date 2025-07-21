@@ -4,16 +4,31 @@ import AuthService from './auth.service'; // To get the auth header
 // Adjust the base URL to your backend server's address and port
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/products/`;
 
+const UPLOAD_API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/upload/`;
+
 class ProductService {
   // Get all products (with optional filters like activeOnly)
   getAll(filters = {}) {
     let params = {};
+    let headers = AuthService.getAuthHeader();
+    if (filters.psid) {
+      headers = { ...headers, 'psid': filters.psid };
+    }
     if (filters.activeOnly) {
       params.activeOnly = filters.activeOnly;
     }
     return axios.get(API_URL, {
-      headers: AuthService.getAuthHeader(),
+      headers: headers,
       params: params
+    });
+  }
+
+  // Upload images
+  uploadImages(formData) {
+    return axios.post(UPLOAD_API_URL + 'image', formData, {
+      headers: {
+        ...AuthService.getAuthHeader() // Include auth header if needed for upload endpoint. Axios will set Content-Type automatically for FormData.
+      }
     });
   }
 
@@ -23,16 +38,14 @@ class ProductService {
   }
 
   // Create a new product
-  // data should include { name, price, description?, image_url?, weight_oz?, is_active?, collectionId? }
+  // data should include { name, price, description?, images?, weight_oz?, is_active?, collectionId? }
   create(data) {
-    // TODO: Handle image upload separately if not just providing URL
     return axios.post(API_URL, data, { headers: AuthService.getAuthHeader() });
   }
 
   // Update a product
-  // data can include any fields to update (name, price, description?, image_url?, weight_oz?, is_active?, collectionId?)
+  // data can include any fields to update (name, price, description?, images?, weight_oz?, is_active?, collectionId?)
   update(id, data) {
-     // TODO: Handle image upload separately if not just providing URL
     return axios.put(API_URL + id, data, { headers: AuthService.getAuthHeader() });
   }
 

@@ -3,6 +3,8 @@ import ProductService from '../services/product.service';
 import CollectionService from '../services/collection.service';
 import { useParams, useNavigate } from 'react-router-dom';
 import StockManagement from './StockManagement';
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+import DraggableImage from './DraggableImage';
 
 const ProductForm = () => {
   const { id } = useParams(); // Get ID from URL for editing
@@ -13,11 +15,12 @@ const ProductForm = () => {
     name: '',
     description: '',
     price: '',
-    image_url: '',
+    images: [], // All images will be stored here
     weight_oz: '',
     is_active: true,
   };
   const [product, setProduct] = useState(initialProductState);
+  const [newlySelectedFiles, setNewlySelectedFiles] = useState([]); // For raw File objects selected in the input
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [collections, setCollections] = useState([]);
@@ -41,10 +44,10 @@ const ProductForm = () => {
         .then(response => {
           setProduct({
             ...response.data,
-            price: response.data.price || '', // Handle potential null values from DB
+            price: response.data.price || '',
             weight_oz: response.data.weight_oz || '',
-            image_url: response.data.image_url || '',
             description: response.data.description || '',
+            images: response.data.images || [], // Load existing images
           });
           setLoading(false);
         })
@@ -55,6 +58,7 @@ const ProductForm = () => {
     } else {
       // Reset to initial state if navigating from edit to new
       setProduct(initialProductState);
+      setNewlySelectedFiles([]); // Clear selected files on new product form
     }
   }, [id, isEditing]); // Re-run if ID changes (navigating between edit/new)
 
@@ -63,18 +67,79 @@ const ProductForm = () => {
     setProduct({ ...product, [name]: type === 'checkbox' ? checked : value });
   };
 
-  const handleSubmit = (event) => {
+  const handleFileChange = (event) => {
+    setNewlySelectedFiles(prevFiles => [...prevFiles, ...Array.from(event.target.files)]);
+  };
+
+  const onDragEnd = (result) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const combinedImages = [
+      ...product.images.map(url => ({ type: 'existing', value: url })),
+      ...newlySelectedFiles.map(file => ({ type: 'new', value: file }))
+    ];
+
+    const [movedItem] = combinedImages.splice(result.source.index, 1);
+    combinedImages.splice(result.destination.index, 0, movedItem);
+
+    const updatedExistingImages = combinedImages
+      .filter(item => item.type === 'existing')
+      .map(item => item.value);
+
+    const updatedNewlySelectedFiles = combinedImages
+      .filter(item => item.type === 'new')
+      .map(item => item.value);
+
+    setProduct({ ...product, images: updatedExistingImages });
+    setNewlySelectedFiles(updatedNewlySelectedFiles);
+  };
+
+  const uploadFiles = async (files) => {
+    if (files.length === 0) {
+      return [];
+    }
+
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file); // 'images' must match the field name in multer upload.array
+    });
+
+    try {
+      const response = await ProductService.uploadImages(formData);
+      return response.data.imageUrls;
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      setMessage("Error uploading images: " + (error.response?.data?.message || error.message));
+      return []; // Return an empty array on failure to prevent TypeError
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setMessage('');
 
+    let finalImageUrls = product.images; // Start with existing images (potentially reordered)
+
+    // Upload newly selected files
+    if (newlySelectedFiles.length > 0) {
+      const uploadedNewUrls = await uploadFiles(newlySelectedFiles);
+      if (uploadedNewUrls === null) { // If upload failed
+        setLoading(false);
+        return;
+      }
+      finalImageUrls = [...finalImageUrls, ...uploadedNewUrls]; // Add new URLs to the end
+    }
+
     // Prepare data, ensuring numeric fields are numbers or null
     const dataToSubmit = {
         ...product,
-        price: parseFloat(product.price) || 0, // Default to 0 if invalid
+        price: parseFloat(product.price) || 0,
         weight_oz: product.weight_oz ? parseFloat(product.weight_oz) : null,
         collectionId: product.collectionId === '' ? null : parseInt(product.collectionId),
-        // image_url handling might need adjustment if implementing file uploads
+        images: finalImageUrls, // Send the complete, ordered list of image URLs
     };
 
     const saveAction = isEditing
@@ -83,7 +148,7 @@ const ProductForm = () => {
 
     saveAction
       .then(() => {
-        navigate('/products'); // Redirect to list after save
+        navigate('/products');
       })
       .catch(e => {
         setMessage(e.response?.data?.message || e.message || "Error saving product");
@@ -116,9 +181,44 @@ const ProductForm = () => {
             </div>
          </div>
         <div className="mb-3">
-          <label htmlFor="image_url" className="form-label">Image URL</label>
-          <input type="text" className="form-control" id="image_url" name="image_url" value={product.image_url} onChange={handleInputChange} placeholder="https://example.com/image.jpg"/>
-           {/* TODO: Add file upload alternative later */}
+          <label htmlFor="images_upload" className="form-label">Product Images (Drag to reorder)</label>
+          <input type="file" className="form-control" id="images_upload" name="images_upload" multiple onChange={handleFileChange} />
+          {(product.images.length > 0 || newlySelectedFiles.length > 0) && (
+            <div className="mt-2">
+              <p>Current and newly selected images:</p>
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="images-droppable" direction="vertical" isDropDisabled={false} isCombineEnabled={false} ignoreContainerClipping={false}>
+                  {(provided) => (
+                    <div
+                      className="d-flex flex-column"
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      {product.images.map((imgUrl, index) => (
+                        <DraggableImage
+                          key={imgUrl}
+                          imageUrl={imgUrl}
+                          index={index}
+                          isNew={false}
+                          totalExistingImages={product.images.length}
+                        />
+                      ))}
+                      {newlySelectedFiles.map((file, index) => (
+                        <DraggableImage
+                          key={`${file.name}-${file.lastModified}-${index}`} // Generate unique key for Draggable
+                          file={file}
+                          index={index}
+                          isNew={true}
+                          totalExistingImages={product.images.length}
+                        />
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </div>
+          )}
         </div>
          <div className="mb-3 form-check">
             <input type="checkbox" className="form-check-input" id="is_active" name="is_active" checked={product.is_active} onChange={handleInputChange} />

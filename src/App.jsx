@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import Cart from './components/Cart.component.jsx';
 import ShipmentIntake from './components/ShipmentIntake.jsx';
 import AuthService from './services/auth.service';
 import Login from './components/Login.component.jsx';
@@ -12,6 +13,8 @@ import GroupOrderForm from './components/GroupOrderForm.component.jsx';
 import OrderList from './components/OrderList.component.jsx';
 import OrderDetail from './components/OrderDetail.component.jsx';
 import MessengerOrder from './components/MessengerOrder.component.jsx';
+import ProductDetail from './components/ProductDetail.component.jsx'; // Import the new component
+import CloseNotification from './components/CloseNotification.component.jsx'; // Import the new component
 import PurchaseList from './components/PurchaseList.component.jsx';
 import GroupOrderPurchaseList from './components/GroupOrderPurchaseList.component.jsx';
 import PurchaseOrderList from './components/PurchaseOrderList.component.jsx';
@@ -27,6 +30,7 @@ import './App.css';
 // import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
+  const location = useLocation(); // Call useLocation unconditionally as the very first hook
   const [currentUser, setCurrentUser] = useState(undefined);
 
   useEffect(() => {
@@ -54,7 +58,10 @@ function App() {
     <div>
       {/* Hide Nav for the messenger webview route? Or adjust layout */}
       {/* We might need a way to detect if it's in the webview */}
-      {useLocation().pathname !== '/messenger-order' ? (
+      {location.pathname !== '/messenger-order' &&
+       location.pathname !== '/cart' &&
+       !location.pathname.startsWith('/product-detail/') &&
+       location.pathname !== '/close-notification' ? (
         <>
           <nav className="navbar navbar-expand navbar-dark bg-dark">
             <Link to={"/"} className="navbar-brand">
@@ -128,8 +135,11 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
-          {/* Messenger Webview Route (Public) */}
+          {/* Messenger Webview Routes (Public) */}
           <Route path="/messenger-order" element={<MessengerOrder />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/product-detail/:productId" element={<ProductDetail />} /> {/* New Product Detail Route */}
+          <Route path="/close-notification" element={<CloseNotification />} /> {/* New Close Notification Route */}
 
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />

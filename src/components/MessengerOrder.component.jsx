@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import WebviewService from '../services/webview.service';
 import './MessengerOrder.component.css';
 import _ from 'lodash';
@@ -27,7 +27,23 @@ const MessengerOrder = () => {
   const debouncedSetSearchTerm = useCallback(
     _.debounce(value => {
       setSearchTerm(value);
-    }, 300), []
+    }, 300),
+    []
+  );
+
+  // Debounce cart updates to the backend
+  const debouncedUpdateCart = useCallback(
+    _.debounce((psid, items) => {
+      WebviewService.updateCart(psid, { items })
+        .then(() => {
+          console.log("Cart updated in backend.");
+        })
+        .catch(e => {
+          console.error("Error debounced updating cart:", e);
+          // Optionally, set an error state here if needed for user feedback
+        });
+    }, 500), // Debounce for 500ms
+    []
   );
 
   // Fetch initial data
@@ -47,8 +63,9 @@ const MessengerOrder = () => {
         setFilteredProducts(response.data.products); // Initialize filtered products
         // Initialize cart state from backend data
         const initialCart = {};
+        // itemData is already the quantity due to backend normalization
         Object.entries(response.data.currentCart || {}).forEach(([productId, itemData]) => {
-          initialCart[productId] = itemData.quantity;
+          initialCart[productId] = itemData;
         });
         setCart(initialCart);
         setLoading(false);
@@ -62,7 +79,7 @@ const MessengerOrder = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // Fetch data when component mounts or psid changes
+  }, [fetchData]);
 
   useEffect(() => {
     const filtered = products.filter(product =>
@@ -82,15 +99,20 @@ const MessengerOrder = () => {
         // Remove item if quantity is 0 or invalid
         delete updatedCart[productId];
       }
+      // Call debounced update to backend
+      debouncedUpdateCart(psid, updatedCart);
       return updatedCart;
     });
   };
 
   const calculateTotal = () => {
     let total = 0;
-    filteredProducts.forEach(p => {
-      if (cart[p.id]) {
-        total += parseFloat(p.price) * cart[p.id];
+    // Use the actual products array to calculate total, not filteredProducts,
+    // to ensure total reflects all items in cart, even if not currently visible due to search.
+    Object.entries(cart).forEach(([productId, quantity]) => {
+      const product = products.find(p => p.id === parseInt(productId));
+      if (product) {
+        total += parseFloat(product.price) * parseInt(quantity); // Ensure quantity is parsed as int
       }
     });
     return total.toFixed(2);
@@ -117,17 +139,8 @@ const MessengerOrder = () => {
       .then(() => {
         console.log("Cart updated.");
         setIsSaving(false);
-        setError("Your selections have been saved. Please close this window to return to Messenger.");
-
-        if (window.MessengerExtensions) {
-          window.MessengerExtensions.requestCloseBrowser(function success() {
-            // webview closed
-          }, function error(err) {
-            console.error(err);
-          });
-        } else {
-          console.log("Messenger Extensions not available.");
-        }
+        // Navigate to the cart page within the webview
+        navigate(`/cart?psid=${psid}`);
       })
       .catch(e => {
         setError(e.response?.data?.message || e.message || "Error saving cart.");
@@ -135,6 +148,7 @@ const MessengerOrder = () => {
         setIsSaving(false);
       });
   };
+
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -174,54 +188,82 @@ const MessengerOrder = () => {
       <h3>{groupOrderName || 'Order Items'}</h3>
 
       {/* Search Bar */}
-      <div className="mb-3 sticky-top">
+      <div className="sticky-top search-bar-container">
         <input
           type="text"
           className="form-control"
-          placeholder="Search by name"
+          placeholder="Search by name or collection"
           onChange={handleSearchChange}
-          style={{ width: '200px' }}
         />
       </div>
 
-      <p>Adjust quantities below. Set quantity to 0 to remove an item.</p>
-      {error && <div className="alert alert-danger">{error}</div>}
+            <p className="text-muted mt-3">Tap on an item for more details or adjust quantities below. Set quantity to 0 to remove an item.</p>
+            {error && <div className="alert alert-danger">{error}</div>}
 
-      {sortedCollections.map(collection => (
-        <div key={collection} className="mb-4">
-          <h4>{collection}</h4>
-          {groupedProducts[collection].map(product => (
-            <div key={product.id} className="product-container">
-              {product.image_url && <img src={product.image_url} alt={product.name} className="product-image" />}
-              <ul className="product-details">
-                <li>{product.name}</li>
-                <li>Price: ${parseFloat(product.price).toFixed(2)}</li>
-                <li>
-                  Quantity:
-                  <input
-                    type="number"
-                    className="form-control form-control-sm"
-                    min="0"
-                    value={cart[product.id] || 0}
-                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                    style={{ width: '80px', textAlign: 'center', display: 'inline-block', marginLeft: '10px' }}
-                  />
-                </li>
-              </ul>
-            </div>
-          ))}
+            {sortedCollections.map(collection => (
+                <div key={collection} className="mb-4">
+                    <h4>{collection}</h4>
+                    {groupedProducts[collection].length === 0 && searchTerm ? (
+                        <p className="text-muted">No products found in this collection matching your search.</p>
+                    ) : (
+                        groupedProducts[collection].map(product => (
+                            <div key={product.id} className="product-container">
+                                <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-image-link">
+                                    {product.images && product.images.length > 0 && (
+                                        <img src={`${import.meta.env.VITE_BACKEND_URL}${product.images[0]}`} alt={product.name} className="product-image" />
+                                    )}
+                                </Link>
+                                <div className="product-details-content">
+                                    <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-name-link">
+                                        <ul className="product-details">
+                                            <li>{product.name}</li>
+                                            <li>Price: ${parseFloat(product.price).toFixed(2)}</li>
+                                        </ul>
+                                    </Link>
+                                    <div className="quantity-section-inline"> {/* New div for quantity controls */}
+                                        <label>Quantity:</label>
+                                        <div className="quantity-controls">
+                                            <button
+                                                className="btn btn-sm btn-outline-secondary"
+                                                onClick={() => handleQuantityChange(product.id, (cart[product.id] || 0) - 1)}
+                                                disabled={isSaving}
+                                            >
+                                                -
+                                            </button>
+                                            <span className="quantity">
+                                                {cart[product.id] || 0}
+                                            </span>
+                                            <button
+                                                className="btn btn-sm btn-outline-secondary"
+                                                onClick={() => handleQuantityChange(product.id, (cart[product.id] || 0) + 1)}
+                                                disabled={isSaving}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ))}
+
+      {filteredProducts.length === 0 && !loading && !error && (
+        <p className="text-muted text-center">No products available or matching your search.</p>
+      )}
+
+      <div className="mt-3 d-grid gap-2 sticky-bottom">
+        <div className="order-total">
+          Subtotal: ${calculateTotal()}
         </div>
-      ))}
-
-      <div className="mt-3 d-grid sticky-bottom">
         <button
           className="btn btn-primary"
           onClick={handleSaveAndClose}
           disabled={isSaving}
         >
-          {isSaving ? 'Saving...' : 'Save Selections & Close'}
+          {isSaving ? 'Saving...' : 'Continue to Cart'}
         </button>
-        {error && <div className="alert alert-danger">{error}</div>}
       </div>
     </div>
   );
