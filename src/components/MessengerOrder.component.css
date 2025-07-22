@@ -169,9 +169,9 @@ h4 {
   background-color: #8ab4f8; /* Light blue for primary button */
   border-color: #8ab4f8;
   color: #202124; /* Dark text for contrast */
-  padding: 10px 20px;
+  /*padding: 10px 20px;
   font-size: 1.1rem;
-  border-radius: 5px;
+  border-radius: 5px;*/
 }
 
 .btn-primary:hover {
@@ -180,13 +180,13 @@ h4 {
 }
 
 .btn-secondary {
-  margin-top: 10px;
   background-color: #5f6368; /* Dark grey for secondary button */
   border-color: #5f6368;
   color: #e0e0e0; /* Light text */
+  /*margin-top: 10px;
   padding: 8px 15px;
   font-size: 1rem;
-  border-radius: 5px;
+  border-radius: 5px;*/
 }
 
 .btn-secondary:hover {

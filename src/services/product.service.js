@@ -54,6 +54,11 @@ class ProductService {
     return axios.delete(API_URL + id, { headers: AuthService.getAuthHeader() });
   }
 
+  // Update the order of products within a collection
+  updateCollectionProductOrder(collectionId, productIds) {
+    return axios.put(`${API_URL}reorder/${collectionId}`, { productIds }, { headers: AuthService.getAuthHeader() });
+  }
+
   findInStock() {
     return axios.get(import.meta.env.VITE_BACKEND_URL + '/api/inventory/in-stock', { headers: AuthService.getAuthHeader() });
   }

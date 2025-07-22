@@ -120,9 +120,9 @@
   background-color: #dc3545;
   border-color: #dc3545;
   color: #e0e0e0; /* Light text for danger button */
-  padding: 8px 15px;
+  /*padding: 8px 15px;
   font-size: 1rem;
-  border-radius: 5px;
+  border-radius: 5px;*/
 }
 
 .btn-danger:hover {

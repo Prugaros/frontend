@@ -1,5 +1,5 @@
 import React from 'react';
-import { Draggable } from 'react-beautiful-dnd';
+import { Draggable } from '@hello-pangea/dnd';
 
 const DraggableImage = ({ imageUrl, file, index, isNew, totalExistingImages }) => {
   // If it's a new file, 'file' is the File object itself. If it's an existing URL, 'imageUrl' is the ID.

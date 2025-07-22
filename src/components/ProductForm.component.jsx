@@ -3,7 +3,7 @@ import ProductService from '../services/product.service';
 import CollectionService from '../services/collection.service';
 import { useParams, useNavigate } from 'react-router-dom';
 import StockManagement from './StockManagement';
-import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import DraggableImage from './DraggableImage';
 
 const ProductForm = () => {
