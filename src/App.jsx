@@ -8,6 +8,8 @@ import ProductListTable from './components/ProductListTable.component.jsx';
 import ProductForm from './components/ProductForm.component.jsx';
 import CollectionList from './components/CollectionList.component.jsx';
 import CollectionForm from './components/CollectionForm.component.jsx';
+import BrandList from './components/BrandList.component.jsx';
+import BrandForm from './components/BrandForm.component.jsx';
 import GroupOrderList from './components/GroupOrderList.component.jsx';
 import GroupOrderForm from './components/GroupOrderForm.component.jsx';
 import OrderList from './components/OrderList.component.jsx';
@@ -95,6 +97,11 @@ function App() {
                       Collections
                     </Link>
                   </li>
+                  <li className="nav-item">
+                    <Link to={"/brands"} className="nav-link">
+                      Brands
+                    </Link>
+                  </li>
                   
                    <li className="nav-item">
                     <Link to={"/in-stock"} className="nav-link">
@@ -152,6 +159,10 @@ function App() {
           <Route path="/collections" element={<ProtectedRoute> <CollectionList /> </ProtectedRoute>} />
           <Route path="/collections/new" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
           <Route path="/collections/edit/:id" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
+          {/* Brand Routes */}
+          <Route path="/brands" element={<ProtectedRoute> <BrandList /> </ProtectedRoute>} />
+          <Route path="/brands/new" element={<ProtectedRoute><BrandForm /></ProtectedRoute>} />
+          <Route path="/brands/edit/:id" element={<ProtectedRoute><BrandForm /></ProtectedRoute>} />
           {/* Group Order Routes */}
           <Route path="/group-orders" element={<ProtectedRoute> <GroupOrderList /> </ProtectedRoute>} />
           <Route path="/group-orders/new" element={<ProtectedRoute> <GroupOrderForm /> </ProtectedRoute>} />

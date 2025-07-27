@@ -5,8 +5,8 @@ const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/collections/`;
 
 class CollectionService {
   // Get all collections
-  getAll() {
-    return axios.get(API_URL, { headers: AuthService.getAuthHeader() });
+  getAll(params) {
+    return axios.get(API_URL, { params, headers: AuthService.getAuthHeader() });
   }
 
   // Get a single collection by ID
@@ -32,6 +32,10 @@ class CollectionService {
   // Save the collection order
   saveOrder(order) {
     return axios.post(API_URL + 'order', { order: order }, { headers: AuthService.getAuthHeader() });
+  }
+
+  updateOrder(order) {
+    return axios.post(`${API_URL}update-order`, { order }, { headers: AuthService.getAuthHeader() });
   }
 }
 

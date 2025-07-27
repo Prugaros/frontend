@@ -16,7 +16,7 @@ const ProductListTable = () => {
 
   useEffect(() => {
     retrieveProducts();
-  }, [searchTerm, collectionId]); // Add collectionId to dependency array
+  }, [collectionId]); // Only re-fetch when collectionId changes
 
   const retrieveProducts = () => {
     console.log('retrieveProducts called');
@@ -25,14 +25,11 @@ const ProductListTable = () => {
     setMessage('');
 
     let filters = {};
-    if (searchTerm) {
-      filters.searchTerm = searchTerm;
-    }
     if (collectionId) {
       filters.collectionId = collectionId; // Add collectionId to filters
     }
 
-    ProductService.getAll(filters)
+    ProductService.getAll(filters) // searchTerm is removed from query
       .then(response => {
         console.log('ProductService.getAll response:', response.data);
         let fetchedProducts = response.data;
@@ -44,7 +41,7 @@ const ProductListTable = () => {
         fetchedProducts.sort((a, b) => b.collectionProductOrder - a.collectionProductOrder);
 
         setProducts(fetchedProducts);
-        setFilteredProducts(fetchedProducts);
+        // setFilteredProducts is handled by the other useEffect
         console.log('Products state updated:', fetchedProducts);
         setLoading(false);
       })
@@ -85,6 +82,19 @@ const ProductListTable = () => {
       console.error(e);
       setLoading(false);
       // Re-fetch products on error to revert if update failed
+      retrieveProducts();
+    }
+  };
+
+  const handleFeaturedToggle = async (productId, currentStatus) => {
+    setError('');
+    setMessage('');
+    try {
+      await ProductService.update(productId, { is_featured: !currentStatus });
+      setMessage(`Product ${productId} featured status updated successfully.`);
+      retrieveProducts();
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || `Error updating product ${productId} featured status.`);
       retrieveProducts();
     }
   };
@@ -232,6 +242,7 @@ const ProductListTable = () => {
                     <div className="product-table-cell header-cell">Price</div>
                     <div className="product-table-cell header-cell">Weight (oz)</div>
                     <div className="product-table-cell header-cell">Active</div>
+                    <div className="product-table-cell header-cell">Featured</div>
                     <div className="product-table-cell header-cell">Actions</div>
                   </div>
                 </div>
@@ -264,6 +275,13 @@ const ProductListTable = () => {
                                       type="checkbox"
                                       checked={product.is_active}
                                       onChange={() => handleActiveToggle(product.id, product.is_active)}
+                                    />
+                                  </div>
+                                  <div className="product-table-cell">
+                                    <input
+                                      type="checkbox"
+                                      checked={product.is_featured}
+                                      onChange={() => handleFeaturedToggle(product.id, product.is_featured)}
                                     />
                                   </div>
                                   <div className="product-table-cell">

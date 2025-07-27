@@ -1,40 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import CollectionService from '../services/collection.service';
+import BrandService from '../services/brand.service';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 
 const CollectionForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [Name, setName] = useState('');
-  const [DisplayOrder, setDisplayOrder] = useState('');
-  const [isActive, setIsActive] = useState(true);
+  const [collection, setCollection] = useState({
+    Name: '',
+    DisplayOrder: '',
+    isActive: true,
+    is_featured: false,
+    brandId: ''
+  });
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (id) {
-      retrieveCollection(id);
-    }
+    setLoading(true);
+    BrandService.getAll()
+      .then(response => {
+        setBrands(response.data);
+        if (id) {
+          retrieveCollection(id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        setError(e.response?.data?.message || e.message || "Error fetching brands");
+        setLoading(false);
+      });
   }, [id]);
 
   const retrieveCollection = (id) => {
-    setLoading(true);
-    setError('');
-
     CollectionService.get(id)
       .then(response => {
-        const collection = response.data;
-        setName(collection.Name);
-        setDisplayOrder(collection.DisplayOrder || '');
-        setIsActive(collection.isActive);
+        setCollection({
+          Name: response.data.Name,
+          DisplayOrder: response.data.DisplayOrder || '',
+          isActive: response.data.isActive,
+          is_featured: response.data.is_featured,
+          brandId: response.data.brandId || ''
+        });
         setLoading(false);
       })
       .catch(e => {
         setError(e.response?.data?.message || e.message || "Error fetching collection");
-        console.error(e);
         setLoading(false);
       });
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setCollection(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const saveCollection = () => {
@@ -42,34 +63,20 @@ const CollectionForm = () => {
     setError('');
 
     const data = {
-      Name: Name,
-      DisplayOrder: DisplayOrder === '' ? null : parseInt(DisplayOrder),
-      isActive: isActive
+      ...collection,
+      DisplayOrder: collection.DisplayOrder === '' ? null : parseInt(collection.DisplayOrder),
     };
 
-    if (id) {
-      CollectionService.update(id, data)
-        .then(() => {
-          setLoading(false);
-          navigate('/collections');
-        })
-        .catch(e => {
-          setError(e.response?.data?.message || e.message || `Error updating collection ${id}`);
-          console.error(e);
-          setLoading(false);
-        });
-    } else {
-      CollectionService.create(data)
-        .then(() => {
-          setLoading(false);
-          navigate('/collections');
-        })
-        .catch(e => {
-          setError(e.response?.data?.message || e.message || "Error creating collection");
-          console.error(e);
-          setLoading(false);
-        });
-    }
+    const serviceCall = id ? CollectionService.update(id, data) : CollectionService.create(data);
+
+    serviceCall
+      .then(() => {
+        navigate('/collections');
+      })
+      .catch(e => {
+        setError(e.response?.data?.message || e.message || "Error saving collection");
+        setLoading(false);
+      });
   };
 
   return (
@@ -77,6 +84,7 @@ const CollectionForm = () => {
       <h2>{id ? 'Edit Collection' : 'Add Collection'}</h2>
 
       {error && <div className="alert alert-danger">{error}</div>}
+      {loading && <p>Loading...</p>}
 
       <div className="mb-3">
         <label htmlFor="Name" className="form-label">Name:</label>
@@ -84,10 +92,27 @@ const CollectionForm = () => {
           type="text"
           className="form-control"
           id="Name"
+          name="Name"
           required
-          value={Name}
-          onChange={(e) => setName(e.target.value)}
+          value={collection.Name}
+          onChange={handleChange}
         />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="brandId" className="form-label">Brand:</label>
+        <select
+          className="form-control"
+          id="brandId"
+          name="brandId"
+          value={collection.brandId}
+          onChange={handleChange}
+        >
+          <option value="">Select a Brand</option>
+          {brands.map(brand => (
+            <option key={brand.id} value={brand.id}>{brand.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="mb-3">
@@ -96,8 +121,9 @@ const CollectionForm = () => {
           type="number"
           className="form-control"
           id="DisplayOrder"
-          value={DisplayOrder}
-          onChange={(e) => setDisplayOrder(e.target.value)}
+          name="DisplayOrder"
+          value={collection.DisplayOrder}
+          onChange={handleChange}
         />
       </div>
 
@@ -106,10 +132,23 @@ const CollectionForm = () => {
           type="checkbox"
           className="form-check-input"
           id="isActive"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
+          name="isActive"
+          checked={collection.isActive}
+          onChange={handleChange}
         />
         <label className="form-check-label" htmlFor="isActive">Active</label>
+      </div>
+
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="is_featured"
+          name="is_featured"
+          checked={collection.is_featured}
+          onChange={handleChange}
+        />
+        <label className="form-check-label" htmlFor="is_featured">Featured</label>
       </div>
 
       <button onClick={saveCollection} className="btn btn-primary" disabled={loading}>

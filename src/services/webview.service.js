@@ -24,6 +24,20 @@ class WebviewService {
     return axios.get(API_URL + 'order-data', { params: { psid, ...filters }, ...config });
   }
 
+  getFeaturedData() {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' }
+    };
+    return axios.get(API_URL + 'featured-data', config);
+  }
+
+  getBrandData(brandId) {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' }
+    };
+    return axios.get(API_URL + `brand-data/${brandId}`, config);
+  }
+
   // Send updated cart data back to the backend
   // items should be an object like { productId: quantity, ... }
   updateCart(psid, items) {

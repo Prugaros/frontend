@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProductService from '../services/product.service';
 import CollectionService from '../services/collection.service';
+import BrandService from '../services/brand.service';
 import { useParams, useNavigate } from 'react-router-dom';
 import StockManagement from './StockManagement';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
@@ -18,53 +19,82 @@ const ProductForm = () => {
     images: [], // All images will be stored here
     weight_oz: '',
     is_active: true,
+    brandId: '',
   };
   const [product, setProduct] = useState(initialProductState);
   const [newlySelectedFiles, setNewlySelectedFiles] = useState([]); // For raw File objects selected in the input
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [brands, setBrands] = useState([]);
   const [collections, setCollections] = useState([]);
 
   useEffect(() => {
-    const fetchCollections = async () => {
+    const fetchAndSetData = async () => {
+      setLoading(true);
       try {
-        const response = await CollectionService.getAll();
-        setCollections(response.data);
+        // 1. Fetch all brands. This is needed for both create and edit modes.
+        const brandsResponse = await BrandService.getAll();
+        setBrands(brandsResponse.data);
+
+        if (isEditing) {
+          // 2. If editing, fetch the specific product.
+          const productResponse = await ProductService.get(id);
+          const fetchedProduct = { ...productResponse.data };
+
+          // 3. Normalize the product data for the form state.
+          const brandId = fetchedProduct.brand?.id;
+          const collectionId = fetchedProduct.collection?.id;
+          fetchedProduct.brandId = brandId || '';
+          fetchedProduct.collectionId = collectionId || '';
+
+          // 4. If a brand is associated with the product, fetch its collections.
+          if (brandId) {
+            const collectionsResponse = await CollectionService.getAll({ brandId });
+            setCollections(collectionsResponse.data);
+          } else {
+            setCollections([]);
+          }
+
+          // 5. Set the fully prepared product state.
+          setProduct(fetchedProduct);
+        } else {
+          // If creating a new product, just use the initial empty state.
+          setProduct(initialProductState);
+          setCollections([]);
+        }
       } catch (error) {
-        console.error("Error fetching collections:", error);
-        setMessage("Error fetching collections: " + (error.response?.data?.message || error.message));
+        const errorMessage = error.response?.data?.message || error.message;
+        setMessage(`Error fetching data: ${errorMessage}`);
+        console.error("Error fetching initial data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCollections();
+    fetchAndSetData();
+  }, [id, isEditing]);
 
-    if (isEditing) {
-      setLoading(true);
-      ProductService.get(id)
-        .then(response => {
-          setProduct({
-            ...response.data,
-            price: response.data.price || '',
-            weight_oz: response.data.weight_oz || '',
-            description: response.data.description || '',
-            images: response.data.images || [], // Load existing images
-          });
-          setLoading(false);
-        })
-        .catch(e => {
-          setMessage("Error fetching product: " + (e.response?.data?.message || e.message));
-          setLoading(false);
-        });
-    } else {
-      // Reset to initial state if navigating from edit to new
-      setProduct(initialProductState);
-      setNewlySelectedFiles([]); // Clear selected files on new product form
-    }
-  }, [id, isEditing]); // Re-run if ID changes (navigating between edit/new)
-
-  const handleInputChange = (event) => {
+  const handleInputChange = async (event) => {
     const { name, value, type, checked } = event.target;
-    setProduct({ ...product, [name]: type === 'checkbox' ? checked : value });
+    const newProductState = { ...product, [name]: type === 'checkbox' ? checked : value };
+
+    // If the brand is changed, we must reset the collection and fetch new ones.
+    if (name === 'brandId') {
+      newProductState.collectionId = ''; // Reset collection selection
+      if (value) { // If a new brand is selected (not "Select a Brand")
+        try {
+          const response = await CollectionService.getAll({ brandId: value });
+          setCollections(response.data);
+        } catch (error) {
+          console.error("Error fetching collections for brand:", error);
+          setCollections([]);
+        }
+      } else { // If the brand is cleared
+        setCollections([]);
+      }
+    }
+
+    setProduct(newProductState);
   };
 
   const handleFileChange = (event) => {
@@ -139,6 +169,7 @@ const ProductForm = () => {
         price: parseFloat(product.price) || 0,
         weight_oz: product.weight_oz ? parseFloat(product.weight_oz) : null,
         collectionId: product.collectionId === '' ? null : parseInt(product.collectionId),
+        brandId: parseInt(product.brandId),
         images: finalImageUrls, // Send the complete, ordered list of image URLs
     };
 
@@ -226,6 +257,23 @@ const ProductForm = () => {
         </div>
 
         <div className="mb-3">
+          <label htmlFor="brandId" className="form-label">Brand</label>
+          <select
+            className="form-control"
+            id="brandId"
+            name="brandId"
+            value={product.brandId || ''}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select a Brand</option>
+            {brands.map(brand => (
+              <option key={brand.id} value={brand.id}>{brand.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-3">
           <label htmlFor="collectionId" className="form-label">Collection</label>
           <select
             className="form-control"
@@ -233,6 +281,7 @@ const ProductForm = () => {
             name="collectionId"
             value={product.collectionId || ''}
             onChange={handleInputChange}
+            disabled={!product.brandId}
           >
             <option value="">No Collection</option>
             {collections.map(collection => (
