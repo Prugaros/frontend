@@ -23,6 +23,7 @@ import PurchaseOrderList from './components/PurchaseOrderList.component.jsx';
 import InStockProducts from './components/InStockProducts.jsx';
 import ShipmentManifest from './components/ShipmentManifest.component.jsx';
 import PackingOrders from './components/PackingOrders.component.jsx';
+import PrivacyPolicy from './components/PrivacyPolicy.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -142,6 +143,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* Messenger Webview Routes (Public) */}
           <Route path="/messenger-order" element={<MessengerOrder />} />
           <Route path="/cart" element={<Cart />} />
