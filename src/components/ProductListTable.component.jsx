@@ -13,10 +13,11 @@ const ProductListTable = () => {
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [view, setView] = useState('all'); // 'all' or 'blacklisted'
 
   useEffect(() => {
     retrieveProducts();
-  }, [collectionId]); // Only re-fetch when collectionId changes
+  }, [collectionId, view]); // Re-fetch when collectionId or view changes
 
   const retrieveProducts = () => {
     console.log('retrieveProducts called');
@@ -27,6 +28,9 @@ const ProductListTable = () => {
     let filters = {};
     if (collectionId) {
       filters.collectionId = collectionId; // Add collectionId to filters
+    }
+    if (view === 'blacklisted') {
+      filters.is_blacklisted = true;
     }
 
     ProductService.getAll(filters) // searchTerm is removed from query
@@ -82,6 +86,19 @@ const ProductListTable = () => {
       console.error(e);
       setLoading(false);
       // Re-fetch products on error to revert if update failed
+      retrieveProducts();
+    }
+  };
+
+  const handleBlacklistToggle = async (productId, currentStatus) => {
+    setError('');
+    setMessage('');
+    try {
+      await ProductService.update(productId, { is_blacklisted: !currentStatus });
+      setMessage(`Product ${productId} blacklist status updated successfully.`);
+      retrieveProducts();
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || `Error updating product ${productId} blacklist status.`);
       retrieveProducts();
     }
   };
@@ -212,7 +229,11 @@ const ProductListTable = () => {
   return (
     <div>
       <h2>Product Management</h2>
-      <Link to="/products/new" className="btn btn-primary mb-3">Add New Product</Link>
+      <div className="mb-3">
+        <Link to="/products/new" className="btn btn-primary me-2">Add New Product</Link>
+        <button className={`btn ${view === 'all' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setView('all')}>All Products</button>
+        <button className={`btn ${view === 'blacklisted' ? 'btn-secondary' : 'btn-outline-secondary'} ms-2`} onClick={() => setView('blacklisted')}>Blacklist</button>
+      </div>
 
       {/* Search Bar */}
       <div className="mb-3">
@@ -240,7 +261,6 @@ const ProductListTable = () => {
                     <div className="product-table-cell header-cell">ID</div>
                     <div className="product-table-cell header-cell">Name</div>
                     <div className="product-table-cell header-cell">Price</div>
-                    <div className="product-table-cell header-cell">Weight (oz)</div>
                     <div className="product-table-cell header-cell">Active</div>
                     <div className="product-table-cell header-cell">Featured</div>
                     <div className="product-table-cell header-cell">Actions</div>
@@ -269,7 +289,6 @@ const ProductListTable = () => {
                                   <div className="product-table-cell">{product.id}</div>
                                   <div className="product-table-cell">{product.name}</div>
                                   <div className="product-table-cell">${product.price}</div>
-                                  <div className="product-table-cell">{product.weight_oz || '-'}</div>
                                   <div className="product-table-cell">
                                     <input
                                       type="checkbox"
@@ -284,14 +303,21 @@ const ProductListTable = () => {
                                       onChange={() => handleFeaturedToggle(product.id, product.is_featured)}
                                     />
                                   </div>
-                                  <div className="product-table-cell">
-                                    <Link to={`/products/edit/${product.id}`} className="btn btn-sm btn-warning me-2">Edit</Link>
+                                  <div className="product-table-cell" style={{ display: 'flex', gap: '5px' }}>
+                                    <Link to={`/products/edit/${product.id}`} className="btn btn-sm btn-warning">Edit</Link>
                                     <button
                                       onClick={() => deleteProduct(product.id)}
                                       className="btn btn-sm btn-danger"
                                     >
                                       Delete
                                     </button>
+                                    <button
+                                      onClick={() => handleBlacklistToggle(product.id, product.is_blacklisted)}
+                                      className={`btn btn-sm ${product.is_blacklisted ? 'btn-success' : 'btn-secondary'}`}
+                                    >
+                                      {product.is_blacklisted ? 'Whitelist' : 'Blacklist'}
+                                    </button>
+                                    <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-info">🔗</a>
                                   </div>
                                 </div>
                               </div>

@@ -8,7 +8,7 @@ const GroupOrderForm = () => {
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
-  const initialGroupOrderState = { name: '', start_date: '', end_date: '', productIds: [] };
+  const initialGroupOrderState = { name: '', start_date: '', end_date: '', productIds: [], custom_message: '' };
   const [groupOrder, setGroupOrder] = useState(initialGroupOrderState);
   const [allProducts, setAllProducts] = useState([]); // To populate product selection
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,8 @@ const GroupOrderForm = () => {
               name: data.name || '',
               start_date: formattedStartDate,
               end_date: formattedEndDate,
-              productIds: data.products?.map(p => p.id) || [] // Extract product IDs
+              productIds: data.products?.map(p => p.id) || [], // Extract product IDs
+              custom_message: data.custom_message || ''
           });
           setLoading(false);
         })
@@ -80,7 +81,8 @@ const GroupOrderForm = () => {
         name: groupOrder.name,
         start_date: groupOrder.start_date || null,
         end_date: groupOrder.end_date || null,
-        productIds: groupOrder.productIds
+        productIds: groupOrder.productIds,
+        custom_message: groupOrder.custom_message
         // Status is handled by backend (defaults to Draft on create, updated via Start/End actions)
     };
 
@@ -136,6 +138,18 @@ const GroupOrderForm = () => {
             name="end_date"
             value={groupOrder.end_date}
             onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="custom_message" className="form-label">Custom Message</label>
+          <textarea
+            className="form-control"
+            id="custom_message"
+            name="custom_message"
+            value={groupOrder.custom_message}
+            onChange={handleInputChange}
+            rows="5"
           />
         </div>
 

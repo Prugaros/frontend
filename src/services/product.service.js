@@ -9,13 +9,11 @@ const UPLOAD_API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/upload/`;
 class ProductService {
   // Get all products (with optional filters like activeOnly)
   getAll(filters = {}) {
-    let params = {};
+    let params = { ...filters };
     let headers = AuthService.getAuthHeader();
     if (filters.psid) {
       headers = { ...headers, 'psid': filters.psid };
-    }
-    if (filters.activeOnly) {
-      params.activeOnly = filters.activeOnly;
+      delete params.psid;
     }
     return axios.get(API_URL, {
       headers: headers,

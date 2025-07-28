@@ -39,14 +39,18 @@
 /* Adjust column widths as needed */
 .product-table-cell:nth-child(1) { flex: 0.5; min-width: 40px; } /* ID */
 .product-table-cell:nth-child(2) { flex: 3; min-width: 120px; }   /* Name */
-.product-table-cell:nth-child(3) { flex: 1; min-width: 70px; }   /* Price */
-.product-table-cell:nth-child(4) { flex: 1; min-width: 80px; }   /* Weight */
-.product-table-cell:nth-child(5) { flex: 0.8; min-width: 60px; display: flex; justify-content: center; align-items: center; } /* Active (checkbox) */
+.product-table-cell:nth-child(3) { flex: 0.8; min-width: 60px; }   /* Price */
+.product-table-cell:nth-child(4) { flex: 0.5; min-width: 50px; display: flex; justify-content: center; align-items: center; } /* Active (checkbox) */
+.product-table-cell:nth-child(5) { flex: 0.5; min-width: 50px; display: flex; justify-content: center; align-items: center; } /* Featured (checkbox) */
 .product-table-cell:nth-child(6) { /* This was nth-child(7) before */
   flex: 2;
-  min-width: 150px; /* Actions */
+  min-width: 180px; /* Actions */
   display: flex; /* Use flexbox for alignment within the cell */
   gap: 0.5rem; /* Space between buttons */
+}
+
+.header-row .product-table-cell:nth-child(6) {
+  justify-content: center;
 }
 
 /* Styling for draggable items */

@@ -142,7 +142,7 @@ const MessengerOrder = () => {
     const filteredCollections = collections
         .map(collection => ({
             ...collection,
-            products: (collection.products || []).filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            products: (collection.products || []).filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
         }))
         .filter(collection => collection.products.length > 0);
 
@@ -224,7 +224,7 @@ const MessengerOrder = () => {
             {featuredData.otherFeaturedItems.length > 0 && (
               <>
                 <h4>Other Featured Items</h4>
-                {featuredData.otherFeaturedItems.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                {featuredData.otherFeaturedItems.filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
                     <ProductRow key={product.id} product={product} />
                 ))}
               </>
@@ -238,7 +238,7 @@ const MessengerOrder = () => {
                 <>
                   <h4>Other {brandDataCache[activeTab]?.name} Items</h4>
                   {brandDataCache[activeTab].otherBrandItems
-                    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
                     .map(product => (
                       <ProductRow key={product.id} product={product} />
                   ))}

@@ -144,7 +144,7 @@ const ProductDetail = () => {
 
       <div className="product-info">
         <h2>{product.name}</h2>
-        <p className="product-description">{product.description}</p>
+        {/* <p className="product-description">{product.description}</p> */}
         <p className="product-price">Price: ${parseFloat(product.price).toFixed(2)}</p>
 
         <div className="quantity-section">
