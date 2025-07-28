@@ -20,10 +20,25 @@ const MessengerOrder = () => {
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('featured'); // 'featured' or brand.id
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('activeTab') || 'featured');
   const [featuredData, setFeaturedData] = useState({ featuredCollections: [], otherFeaturedItems: [] });
   const [brandDataCache, setBrandDataCache] = useState({}); // Cache for brand data
   const [loadingTab, setLoadingTab] = useState(false);
+
+  // Restore scroll position after loading and tab content is ready
+  useEffect(() => {
+    if (!loading && !loadingTab) {
+      const scrollPosition = sessionStorage.getItem('messengerOrderScrollPosition');
+      if (scrollPosition) {
+        // Use a timeout to ensure the content is rendered before scrolling
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(scrollPosition, 10));
+          sessionStorage.removeItem('messengerOrderScrollPosition');
+          sessionStorage.removeItem('activeTab'); // Clean up after use
+        }, 100); 
+      }
+    }
+  }, [loading, loadingTab]);
 
   const debouncedUpdateCart = useCallback(
     _.debounce((psid, items) => {
@@ -127,11 +142,21 @@ const MessengerOrder = () => {
   const handleSaveAndClose = () => {
     setIsSaving(true);
     WebviewService.updateCart(psid, { items: cart })
-      .then(() => navigate(`/cart?psid=${psid}`))
+      .then(() => {
+        // Clear session storage on explicit navigation to cart
+        sessionStorage.removeItem('messengerOrderScrollPosition');
+        sessionStorage.removeItem('activeTab');
+        navigate(`/cart?psid=${psid}`);
+      })
       .catch(e => {
         setError(e.response?.data?.message || e.message || "Error saving cart.");
         setIsSaving(false);
       });
+  };
+
+  const handleProductLinkClick = () => {
+    sessionStorage.setItem('messengerOrderScrollPosition', window.scrollY);
+    sessionStorage.setItem('activeTab', activeTab);
   };
 
   const renderCollections = (collections) => {
@@ -162,13 +187,13 @@ const MessengerOrder = () => {
   
   const ProductRow = ({ product }) => (
     <div key={product.id} className="product-container">
-      <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-image-link">
+      <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-image-link" onClick={handleProductLinkClick}>
         {product.images && product.images.length > 0 && (
           <img src={`${import.meta.env.VITE_BACKEND_URL}${product.images[0]}`} alt={product.name} className="product-image" />
         )}
       </Link>
       <div className="product-details-content">
-        <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-name-link">
+        <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-name-link" onClick={handleProductLinkClick}>
           <ul className="product-details">
             <li>{product.name}</li>
             <li>Price: ${parseFloat(product.price).toFixed(2)}</li>
