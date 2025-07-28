@@ -8,7 +8,7 @@ const GroupOrderForm = () => {
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
-  const initialGroupOrderState = { name: '', start_date: '', end_date: '', productIds: [], custom_message: '' };
+  const initialGroupOrderState = { name: '', start_date: '', end_date: '', productIds: [], custom_message: '', postToFacebook: true };
   const [groupOrder, setGroupOrder] = useState(initialGroupOrderState);
   const [allProducts, setAllProducts] = useState([]); // To populate product selection
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,8 @@ const GroupOrderForm = () => {
               start_date: formattedStartDate,
               end_date: formattedEndDate,
               productIds: data.products?.map(p => p.id) || [], // Extract product IDs
-              custom_message: data.custom_message || ''
+              custom_message: data.custom_message || '',
+              postToFacebook: data.postToFacebook !== undefined ? data.postToFacebook : true
           });
           setLoading(false);
         })
@@ -57,8 +58,8 @@ const GroupOrderForm = () => {
   }, [id, isEditing]);
 
   const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setGroupOrder({ ...groupOrder, [name]: value });
+    const { name, value, type, checked } = event.target;
+    setGroupOrder({ ...groupOrder, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleProductSelectionChange = (event) => {
@@ -82,7 +83,8 @@ const GroupOrderForm = () => {
         start_date: groupOrder.start_date || null,
         end_date: groupOrder.end_date || null,
         productIds: groupOrder.productIds,
-        custom_message: groupOrder.custom_message
+        custom_message: groupOrder.custom_message,
+        postToFacebook: groupOrder.postToFacebook
         // Status is handled by backend (defaults to Draft on create, updated via Start/End actions)
     };
 
@@ -151,6 +153,20 @@ const GroupOrderForm = () => {
             onChange={handleInputChange}
             rows="5"
           />
+        </div>
+
+        <div className="form-check mb-3">
+            <input
+                className="form-check-input"
+                type="checkbox"
+                id="postToFacebook"
+                name="postToFacebook"
+                checked={groupOrder.postToFacebook}
+                onChange={handleInputChange}
+            />
+            <label className="form-check-label" htmlFor="postToFacebook">
+                Post to Facebook when started
+            </label>
         </div>
 
         <div className="mb-3">
