@@ -110,8 +110,16 @@ const ProductDetail = () => {
     debouncedUpdateCart(psid, newCartItems); // Send the full updated cart
   };
 
-  const handleGoToCart = () => {
-    navigate(`/cart?psid=${psid}`);
+  const handleGoToCart = async () => {
+    setIsUpdatingCart(true);
+    try {
+      await WebviewService.updateCart(psid, { items: cartItems });
+      navigate(`/cart?psid=${psid}`);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Error saving cart.");
+    } finally {
+      setIsUpdatingCart(false);
+    }
   };
 
   if (loading) return <div className="container mt-3"><p>Loading product details...</p></div>;

@@ -40,3 +40,10 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Add this media query for larger screens */
+@media (min-width: 768px) {
+  .container {
+    max-width: 960px; /* Or any other value that you prefer */
+  }
+}

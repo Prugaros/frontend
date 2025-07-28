@@ -99,13 +99,15 @@ const Cart = () => {
   };
 
   const handleQuantityChange = (productId, newQuantity) => {
-    const quantity = parseInt(newQuantity);
+    const quantity = parseInt(newQuantity, 10);
     setCart(prevCart => {
-      const updatedCart = { ...prevCart };
+      let updatedCart;
       if (!isNaN(quantity) && quantity > 0) {
-        updatedCart[productId] = quantity;
+        updatedCart = { ...prevCart, [productId]: quantity };
       } else {
-        delete updatedCart[productId];
+        // eslint-disable-next-line no-unused-vars
+        const { [productId]: removed, ...restOfCart } = prevCart;
+        updatedCart = restOfCart;
       }
       debouncedUpdateCart(psid, updatedCart);
       return updatedCart;
@@ -114,8 +116,8 @@ const Cart = () => {
 
   const handleRemoveFromCart = (productId) => {
     setCart(prevCart => {
-      const updatedCart = { ...prevCart };
-      delete updatedCart[productId];
+      // eslint-disable-next-line no-unused-vars
+      const { [productId]: removed, ...updatedCart } = prevCart;
       debouncedUpdateCart(psid, updatedCart);
       return updatedCart;
     });
