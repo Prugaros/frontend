@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import purchaseListService from '../services/purchaseList.service';
 import purchaseOrderService from '../services/purchaseOrder.service';
-import AuthService from '../services/auth.service';
-import axios from 'axios';
 
 const GroupOrderPurchaseList = () => {
   const { groupOrderId } = useParams();
   const [purchaseList, setPurchaseList] = useState([]);
   const [purchasedQuantities, setPurchasedQuantities] = useState({});
-  const [productNameMap, setProductNameMap] = useState({});
+  const [groupedPurchaseList, setGroupedPurchaseList] = useState({});
+  const [discounts, setDiscounts] = useState({});
+  const [accountBalance, setAccountBalance] = useState(0);
 
   useEffect(() => {
     purchaseListService.getPurchaseListForGroupOrder(groupOrderId)
@@ -22,29 +22,15 @@ const GroupOrderPurchaseList = () => {
   }, [groupOrderId]);
 
   useEffect(() => {
-    const fetchProductNames = async () => {
-      const names = {};
-      for (const item of purchaseList) {
-        try {
-          const user = AuthService.getCurrentUser();
-          const token = user?.accessToken;
-          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/${item.productId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          names[item.productId] = response.data.name;
-        } catch (error) {
-          console.error("Error fetching product name:", error);
-          names[item.productId] = 'N/A';
-        }
+    const grouped = purchaseList.reduce((acc, item) => {
+      const group = item.group || 'Unknown Brand';
+      if (!acc[group]) {
+        acc[group] = [];
       }
-      setProductNameMap(names);
-    };
-
-    if (purchaseList.length > 0) {
-      fetchProductNames();
-    }
+      acc[group].push(item);
+      return acc;
+    }, {});
+    setGroupedPurchaseList(grouped);
   }, [purchaseList]);
 
   const handleQuantityChange = (productId, event) => {
@@ -52,6 +38,16 @@ const GroupOrderPurchaseList = () => {
     setPurchasedQuantities({
       ...purchasedQuantities,
       [productId]: value
+    });
+  };
+
+  const handleDiscountChange = (group, type, value) => {
+    setDiscounts({
+      ...discounts,
+      [group]: {
+        ...discounts[group],
+        [type]: parseFloat(value) || 0
+      }
     });
   };
 
@@ -85,39 +81,100 @@ const GroupOrderPurchaseList = () => {
       });
   };
 
+  const calculateGroupTotal = (items) => {
+    return items.reduce((total, item) => total + (item.MSRP * item.quantity), 0);
+  };
+
+  const calculateTotalMSRP = () => {
+    return Object.values(groupedPurchaseList).flat().reduce((total, item) => total + (item.MSRP * item.quantity), 0);
+  };
+
+  const calculateTotalDiscount = () => {
+    let totalDiscount = 0;
+    for (const group in discounts) {
+      const groupTotal = calculateGroupTotal(groupedPurchaseList[group]);
+      const { flat = 0, percentage = 0 } = discounts[group];
+      totalDiscount += flat;
+      totalDiscount += groupTotal * (percentage / 100);
+    }
+    return totalDiscount;
+  };
+
+  const totalMSRP = calculateTotalMSRP();
+  const totalDiscount = calculateTotalDiscount();
+  const amountNeeded = totalMSRP - totalDiscount - accountBalance;
+
   return (
     <div>
       <h2>Purchase List for Group Order {groupOrderId}</h2>
-      {purchaseList.length > 0 ? (
-        <table>
-          <thead>
-            <tr>
-              <th>Product ID</th>
-              <th>Product Name</th>
-              <th>Quantity</th>
-              <th>Purchased Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchaseList.map(item => (
-              <tr key={item.productId}>
-                <td>{item.productId}</td>
-                <td>{productNameMap[item.productId] || 'Loading...'}</td>
-                <td>{item.quantity}</td>
-                <td>
-                  <input
-                    type="number"
-                    value={purchasedQuantities[item.productId] || 0}
-                    onChange={(event) => handleQuantityChange(item.productId, event)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {Object.keys(groupedPurchaseList).length > 0 ? (
+        Object.entries(groupedPurchaseList).map(([group, items]) => (
+          <div key={group}>
+            <h3>{group}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Product ID</th>
+                  <th>Product Name</th>
+                  <th>Quantity</th>
+                  <th>MSRP</th>
+                  <th>Purchased Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(item => (
+                  <tr key={item.productId}>
+                    <td>{item.productId}</td>
+                    <td>{item.name}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.MSRP}</td>
+                    <td>
+                      <input
+                        type="number"
+                        value={purchasedQuantities[item.productId] || 0}
+                        onChange={(event) => handleQuantityChange(item.productId, event)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div>
+              <strong>Group Total MSRP: {calculateGroupTotal(items)}</strong>
+            </div>
+            <div>
+              <label>Flat Discount: </label>
+              <input
+                type="number"
+                onChange={(e) => handleDiscountChange(group, 'flat', e.target.value)}
+              />
+            </div>
+            <div>
+              <label>Percentage Discount: </label>
+              <input
+                type="number"
+                onChange={(e) => handleDiscountChange(group, 'percentage', e.target.value)}
+              />
+            </div>
+          </div>
+        ))
       ) : (
         <p>No items in the purchase list for this group order.</p>
       )}
+      <div>
+        <h3>Cost Calculator</h3>
+        <p>Total MSRP: {totalMSRP}</p>
+        <p>Total Discounts: {totalDiscount.toFixed(2)}</p>
+        <div>
+          <label>Account Balance: </label>
+          <input
+            type="number"
+            value={accountBalance}
+            onChange={(e) => setAccountBalance(parseFloat(e.target.value) || 0)}
+          />
+        </div>
+        <p>Amount Needed to Transfer: {amountNeeded.toFixed(2)}</p>
+      </div>
       <button onClick={handleCreatePurchase}>Create Purchase</button>
       <Link to={`/purchase-orders/${groupOrderId}`}>
         <button>Purchases</button>
