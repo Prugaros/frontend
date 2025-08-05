@@ -10,6 +10,7 @@ const GroupOrderPurchaseList = () => {
   const [groupedPurchaseList, setGroupedPurchaseList] = useState({});
   const [discounts, setDiscounts] = useState({});
   const [accountBalance, setAccountBalance] = useState(0);
+  const [outOfStockItems, setOutOfStockItems] = useState({});
 
   useEffect(() => {
     purchaseListService.getPurchaseListForGroupOrder(groupOrderId)
@@ -51,6 +52,13 @@ const GroupOrderPurchaseList = () => {
     });
   };
 
+  const handleOutOfStockChange = (productId) => {
+    setOutOfStockItems(prevState => ({
+      ...prevState,
+      [productId]: !prevState[productId]
+    }));
+  };
+
   const handleCreatePurchase = () => {
     const purchaseOrderItems = Object.entries(purchasedQuantities)
       .filter(([productId, quantity]) => quantity > 0)
@@ -82,11 +90,21 @@ const GroupOrderPurchaseList = () => {
   };
 
   const calculateGroupTotal = (items) => {
-    return items.reduce((total, item) => total + (item.MSRP * item.quantity), 0);
+    return items.reduce((total, item) => {
+      if (outOfStockItems[item.productId]) {
+        return total;
+      }
+      return total + (item.MSRP * item.quantity);
+    }, 0);
   };
 
   const calculateTotalMSRP = () => {
-    return Object.values(groupedPurchaseList).flat().reduce((total, item) => total + (item.MSRP * item.quantity), 0);
+    return Object.values(groupedPurchaseList).flat().reduce((total, item) => {
+      if (outOfStockItems[item.productId]) {
+        return total;
+      }
+      return total + (item.MSRP * item.quantity);
+    }, 0);
   };
 
   const calculateTotalDiscount = () => {
@@ -119,6 +137,7 @@ const GroupOrderPurchaseList = () => {
                   <th>Quantity</th>
                   <th>MSRP</th>
                   <th>Purchased Quantity</th>
+                  <th>Out of Stock</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,6 +152,13 @@ const GroupOrderPurchaseList = () => {
                         type="number"
                         value={purchasedQuantities[item.productId] || 0}
                         onChange={(event) => handleQuantityChange(item.productId, event)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={outOfStockItems[item.productId] || false}
+                        onChange={() => handleOutOfStockChange(item.productId)}
                       />
                     </td>
                   </tr>
