@@ -144,7 +144,11 @@ const GroupOrderPurchaseList = () => {
                 {items.map(item => (
                   <tr key={item.productId}>
                     <td>{item.productId}</td>
-                    <td>{item.name}</td>
+                    <td>
+                      <a href={item.product_url} target="_blank" rel="noopener noreferrer">
+                        {item.name}
+                      </a>
+                    </td>
                     <td>{item.quantity}</td>
                     <td>{item.MSRP}</td>
                     <td>
