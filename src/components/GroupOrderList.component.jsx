@@ -79,6 +79,23 @@ const GroupOrderList = () => {
        }
   };
 
+  const reactivateGroupOrder = (id) => {
+    if (window.confirm(`Are you sure you want to REACTIVATE Group Order ${id}?`)) {
+        setLoading(true);
+        GroupOrderService.reactivate(id)
+            .then(() => {
+                setMessage(`Group Order ${id} reactivated successfully.`);
+                setLoading(false);
+                retrieveGroupOrders(); // Refresh list
+            })
+            .catch(e => {
+                setError(e.response?.data?.message || e.message || `Error reactivating Group Order ${id}`);
+                console.error(e);
+                setLoading(false);
+            });
+    }
+  };
+
 
   return (
     <div>
@@ -119,6 +136,9 @@ const GroupOrderList = () => {
                   }
                   {order.status === 'Active' && (
                     <button onClick={() => endGroupOrder(order.id)} className="btn btn-sm btn-secondary me-2">End</button>
+                  )}
+                  {order.status === 'Closed' && (
+                    <button onClick={() => reactivateGroupOrder(order.id)} className="btn btn-sm btn-warning me-2">Reactivate</button>
                   )}
                   <button onClick={() => {}} className="btn btn-sm btn-info me-2">
                     <Link to={`/purchase-list/${order.id}`} style={{ textDecoration: 'none', color: 'white' }}>Purchase</Link>

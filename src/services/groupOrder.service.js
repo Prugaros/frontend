@@ -43,6 +43,11 @@ class GroupOrderService {
   end(id) {
     return axios.post(API_URL + id + '/end', {}, { headers: AuthService.getAuthHeader() });
   }
+
+  // Reactivate a group order
+  reactivate(id) {
+    return axios.put(API_URL + id + '/reactivate', {}, { headers: AuthService.getAuthHeader() });
+  }
 }
 
 export default new GroupOrderService();
