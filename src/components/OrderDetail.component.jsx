@@ -137,7 +137,7 @@ const OrderDetail = () => {
            <p><strong>Shipping Cost:</strong> ${order.shipping_cost?.toFixed(2)}</p>
            <p><strong>Total Amount:</strong> ${order.total_amount?.toFixed(2)}</p>
            {/* Add Mark as Paid Button if status allows */}
-           {order.payment_status === 'Payment Claimed' && (
+           {(order.payment_status === 'Payment Claimed' || order.payment_status === 'Invoice Sent') && (
                <button
                     className="btn btn-success btn-sm mt-2"
                     onClick={handleMarkAsPaid}
