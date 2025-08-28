@@ -47,3 +47,24 @@
     max-width: 960px; /* Or any other value that you prefer */
   }
 }
+
+/* Custom styles for responsive navbar on smaller screens */
+@media (max-width: 991.98px) { /* Bootstrap's 'lg' breakpoint is 992px */
+  .navbar-nav {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .navbar-nav .nav-item {
+    width: 100%;
+    text-align: left;
+  }
+
+  .navbar-nav .nav-link {
+    padding-left: 1rem;
+  }
+
+  .navbar-collapse {
+    overflow-x: hidden; /* Prevent horizontal scrolling within the collapsed navbar */
+  }
+}

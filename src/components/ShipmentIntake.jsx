@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import inventoryService from '../services/inventory.service';
+import './ShipmentIntake.component.css'; // Import the new CSS file
 
 const ShipmentIntake = () => {
   const { groupOrderId } = useParams();
   const [shipmentIntakeList, setShipmentIntakeList] = useState([]);
-  const [receivedQuantities, setReceivedQuantities] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true); // Keep loading for initial fetch
+  const [adjustingProductId, setAdjustingProductId] = useState(null);
+  const [adjustedQuantity, setAdjustedQuantity] = useState(0);
 
   useEffect(() => {
     fetchShipmentIntakeList();
@@ -21,192 +22,277 @@ const ShipmentIntake = () => {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching shipment intake list:", error);
-      setMessage(error.response?.data?.message || error.message || "Error fetching shipment intake list");
+      // No message for error, just log
       setLoading(false);
     }
   };
 
-  const handleQuantityChange = (productId, event) => {
-    const value = parseInt(event.target.value, 10) || 0;
-    setReceivedQuantities(prevQuantities => ({
-      ...prevQuantities,
-      [productId]: value,
-    }));
-  };
-
-  const handleSubmitShipmentIntake = async () => {
-    setLoading(true);
-    setMessage('');
+  const handleApprove = async (productId, orderedQuantity) => {
+    // setLoading(true); // Removed to prevent screen jump
+    // setMessage(''); // Removed as per user request
     try {
-      const receivedItems = Object.entries(receivedQuantities).map(([productId, quantity]) => ({
-        productId: parseInt(productId, 10),
-        quantity: quantity,
-      }));
+      const receivedItems = [{
+        productId: productId,
+        quantity: orderedQuantity,
+      }];
 
       await inventoryService.shipmentIntake(groupOrderId, receivedItems);
-      setMessage('Shipment intake submitted successfully!');
-      await fetchShipmentIntakeList();
-      setReceivedQuantities({}); // Clear received quantities
-      setLoading(false);
+      // Update local state to remove the approved item (as its quantity is now 0)
+      setShipmentIntakeList(prevList => prevList.filter(item => item.productId !== productId));
+      // setLoading(false); // Removed to prevent screen jump
     } catch (error) {
-      console.error("Error submitting shipment intake:", error);
-      setMessage(error.response?.data?.message || error.message || "Error submitting shipment intake");
-      setLoading(false);
+      console.error("Error approving shipment intake:", error);
+      // setMessage(error.response?.data?.message || error.message || "Error approving shipment intake"); // Removed as per user request
+      // setLoading(false); // Removed to prevent screen jump
     }
   };
 
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '20px',
+  const handleAdjustClick = (productId, currentQuantity) => {
+    setAdjustingProductId(productId);
+    setAdjustedQuantity(currentQuantity); // Pre-fill with current ordered quantity
   };
 
-  const thStyle = {
-    backgroundColor: '#f2f2f2',
-    border: '1px solid #ddd',
-    padding: '8px',
-    textAlign: 'left',
+  const handleAdjustQuantityChange = (event) => {
+    setAdjustedQuantity(parseInt(event.target.value, 10) || 0);
   };
 
-  const tdStyle = {
-    border: '1px solid #ddd',
-    padding: '8px',
-    textAlign: 'left'
+  const handleSubmitAdjustedQuantity = async (productId) => {
+    // setLoading(true); // Removed to prevent screen jump
+    // setMessage(''); // Removed as per user request
+    try {
+      const receivedItems = [{
+        productId: productId,
+        quantity: adjustedQuantity,
+      }];
+
+      await inventoryService.shipmentIntake(groupOrderId, receivedItems);
+      setShipmentIntakeList(prevList => {
+        const updatedList = prevList.map(item => {
+          if (item.productId === productId) {
+            const newRemainingQuantity = item.quantity - adjustedQuantity;
+            return { ...item, quantity: newRemainingQuantity };
+          }
+          return item;
+        });
+        return updatedList.filter(item => item.quantity > 0); // Filter out items with 0 quantity
+      });
+      setAdjustingProductId(null); // Hide input
+      setAdjustedQuantity(0); // Reset quantity
+      // setLoading(false); // Removed to prevent screen jump
+    } catch (error) {
+      console.error("Error adjusting shipment intake quantity:", error);
+      // setMessage(error.response?.data?.message || error.message || "Error adjusting shipment intake quantity"); // Removed as per user request
+      // setLoading(false); // Removed to prevent screen jump
+    }
   };
 
-  const inputStyle = {
-    width: '80px',
-    padding: '5px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-  };
+  // Grouping logic
+  const groupedItems = useMemo(() => {
+    const brands = {};
+    shipmentIntakeList.forEach(item => {
+      // Only include items with an ordered quantity greater than 0
+      if (item.quantity <= 0) {
+        return;
+      }
 
-  const buttonStyle = {
-    backgroundColor: '#4CAF50',
-    border: 'none',
-    color: 'white',
-    padding: '10px 20px',
-    textAlign: 'center',
-    textDecoration: 'none',
-    display: 'inline-block',
-    fontSize: '16px',
-    margin: '4px 2px',
-    cursor: 'pointer',
-    borderRadius: '5px',
-  };
+      const brandName = item.brand?.name || 'Unbranded';
+      const collectionName = item.collection?.name || 'Other';
 
-  const shortedItems = shipmentIntakeList.filter(item => item.difference < 0);
-  const surplusItems = shipmentIntakeList.filter(item => item.difference > 0);
-  const matchedItems = shipmentIntakeList.filter(item => item.difference === 0);
+      if (!brands[brandName]) {
+        brands[brandName] = {
+          collections: {},
+          other: [],
+          displayOrder: item.brand?.DisplayOrder ?? Infinity // Store DisplayOrder directly
+        };
+      }
+
+      if (collectionName === 'Other') {
+        brands[brandName].other.push(item);
+      } else {
+        if (!brands[brandName].collections[collectionName]) {
+          brands[brandName].collections[collectionName] = [];
+        }
+        brands[brandName].collections[collectionName].push(item);
+      }
+    });
+
+    // Post-processing: Sort collections and items within brands
+    for (const brandName in brands) {
+      // Sort collections by DisplayOrder and then by name
+      const sortedCollectionsArray = Object.entries(brands[brandName].collections).sort(([nameA, itemsA], [nameB, itemsB]) => {
+        const collectionA = itemsA[0]?.collection;
+        const collectionB = itemsB[0]?.collection;
+
+        const orderA = collectionA?.DisplayOrder ?? Infinity;
+        const orderB = collectionB?.DisplayOrder ?? Infinity;
+
+        if (orderA === orderB) {
+          return nameA.localeCompare(nameB); // Fallback to collection name
+        }
+        return orderA - orderB;
+      });
+
+      const sortedCollections = {};
+      sortedCollectionsArray.forEach(([name, items]) => {
+        // Sort items within each collection by collectionProductOrder
+        sortedCollections[name] = items.sort((a, b) => {
+          const orderA = a.collectionProductOrder ?? Infinity;
+          const orderB = b.collectionProductOrder ?? Infinity;
+          if (orderA === orderB) {
+            return a.name.localeCompare(b.name); // Fallback to product name
+          }
+          return orderA - orderB;
+        });
+      });
+      brands[brandName].collections = sortedCollections;
+
+      // Sort 'other' items by product name
+      brands[brandName].other.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Sort brands by DisplayOrder
+    const sortedBrandEntries = Object.entries(brands).sort(([nameA, dataA], [nameB, dataB]) => {
+      // If 'Unbranded' exists, ensure it's last
+      if (nameA === 'Unbranded') return 1;
+      if (nameB === 'Unbranded') return -1;
+
+      const brandAOrder = dataA.displayOrder ?? Infinity;
+      const brandBOrder = dataB.displayOrder ?? Infinity;
+
+      if (brandAOrder === brandBOrder) {
+        return nameA.localeCompare(nameB); // Fallback to brand name if DisplayOrder is the same
+      }
+      return brandAOrder - brandBOrder;
+    });
+
+    return Object.fromEntries(sortedBrandEntries);
+  }, [shipmentIntakeList]);
 
   return (
-    <div>
-      <h2>Shipment Intake for Group Order {groupOrderId}</h2>
-      {message && <div className="alert alert-danger">{message}</div>}
+    <div className="shipment-intake-container container mt-3">
+      <h2 className="mb-3">Shipment Intake for Group Order {groupOrderId}</h2>
+      {/* {message && <div className="alert alert-danger">{message}</div>} Removed as per user request */}
+      {loading && <p>Loading...</p>}
 
-      {/* Shorted Items Table */}
-      <h3>Items Still Needed</h3>
-      {shortedItems.length > 0 ? (
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Product ID</th>
-              <th style={thStyle}>Product Name</th>
-              <th style={thStyle}>Ordered Quantity</th>
-              <th style={thStyle}>Received Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shortedItems.map((item) => (
-              <tr key={item.productId}>
-                <td style={tdStyle}>{item.productId}</td>
-                <td style={tdStyle}>{item.name}</td>
-                <td style={tdStyle}>{item.quantity}</td>
-                <td style={tdStyle}>
-                  <input
-                    type="number"
-                    style={inputStyle}
-                    value={receivedQuantities[item.productId] || ''}
-                    onChange={(event) => handleQuantityChange(item.productId, event)}
-                  />
-                </td>
-              </tr>
+      {Object.keys(groupedItems).length > 0 ? (
+        Object.entries(groupedItems).map(([brandName, brandData]) => (
+          <div key={brandName} className="mb-5">
+            <h3 className="mt-4">{brandName}</h3>
+
+            {Object.entries(brandData.collections).map(([collectionName, items]) => (
+              <div key={collectionName} className="mb-4">
+                <h4 className="mt-3">{collectionName}</h4>
+                <div className="shipment-intake-product-list">
+                  {items.map((item) => (
+                    <div key={item.productId} className="shipment-intake-product-item card mb-2">
+                      <div className="card-body">
+                        <h5 className="card-title">{item.name}</h5>
+                        <p className="card-text">Ordered Quantity: {item.quantity}</p>
+                        <div className="d-flex justify-content-end">
+                          {adjustingProductId === item.productId ? (
+                            <>
+                              <input
+                                type="number"
+                                className="form-control shipment-intake-input d-inline-block w-auto me-2"
+                                value={adjustedQuantity}
+                                onChange={handleAdjustQuantityChange}
+                              />
+                              <button
+                                className="btn btn-primary btn-sm me-2"
+                                onClick={() => handleSubmitAdjustedQuantity(item.productId)}
+                              >
+                                Submit
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setAdjustingProductId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="btn btn-success btn-sm me-2"
+                                onClick={() => handleApprove(item.productId, item.quantity)}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="btn btn-warning btn-sm"
+                                onClick={() => handleAdjustClick(item.productId, item.quantity)}
+                              >
+                                Adjust
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      ) : (
-        <p>No items are shorted.</p>
-      )}
-      <button style={buttonStyle} onClick={handleSubmitShipmentIntake}>Submit Shipment Intake</button>
 
-      {/* Surplus Items Table */}
-      <h3>Surplus Items</h3>
-      {surplusItems.length > 0 ? (
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Product ID</th>
-              <th style={thStyle}>Product Name</th>
-              <th style={thStyle}>Surplus</th>
-              <th style={thStyle}>Received Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {surplusItems.map((item) => (
-              <tr key={item.productId}>
-                <td style={tdStyle}>{item.productId}</td>
-                <td style={tdStyle}>{item.name}</td>
-                <td style={tdStyle}>{item.difference}</td>
-                <td style={tdStyle}>
-                  <input
-                    type="number"
-                    style={inputStyle}
-                    value={receivedQuantities[item.productId] || ''}
-                    onChange={(event) => handleQuantityChange(item.productId, event)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {brandData.other.length > 0 && (
+              <div className="mb-4">
+                <h4 className="mt-3">Other Items (No Collection)</h4>
+                <div className="shipment-intake-product-list">
+                  {brandData.other.map((item) => (
+                    <div key={item.productId} className="shipment-intake-product-item card mb-2">
+                      <div className="card-body">
+                        <h5 className="card-title">{item.name}</h5>
+                        <p className="card-text">Ordered Quantity: {item.quantity}</p>
+                        <div className="d-flex justify-content-end">
+                          {adjustingProductId === item.productId ? (
+                            <>
+                              <input
+                                type="number"
+                                className="form-control shipment-intake-input d-inline-block w-auto me-2"
+                                value={adjustedQuantity}
+                                onChange={handleAdjustQuantityChange}
+                              />
+                              <button
+                                className="btn btn-primary btn-sm me-2"
+                                onClick={() => handleSubmitAdjustedQuantity(item.productId)}
+                              >
+                                Submit
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setAdjustingProductId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="btn btn-success btn-sm me-2"
+                                onClick={() => handleApprove(item.productId, item.quantity)}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="btn btn-warning btn-sm"
+                                onClick={() => handleAdjustClick(item.productId, item.quantity)}
+                              >
+                                Adjust
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))
       ) : (
-        <p>No items are surplus.</p>
+        !loading && <p>No shipment intake items found for this group order.</p>
       )}
-
-      {/* Matched Items Table */}
-      <h3>Matched Items</h3>
-      {matchedItems.length > 0 ? (
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Product ID</th>
-              <th style={thStyle}>Product Name</th>
-              <th style={thStyle}>Difference</th>
-              <th style={thStyle}>Received Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matchedItems.map((item) => (
-              <tr key={item.productId}>
-                <td style={tdStyle}>{item.productId}</td>
-                <td style={tdStyle}>{item.name}</td>
-                <td style={tdStyle}>{item.quantity}</td>
-                <td style={tdStyle}>
-                  <input
-                    type="number"
-                    style={inputStyle}
-                    value={receivedQuantities[item.productId] || ''}
-                    onChange={(event) => handleQuantityChange(item.productId, event)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p>No items are perfectly matched.</p>
-      )}
-
     </div>
   );
 };

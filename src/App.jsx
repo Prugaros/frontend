@@ -66,75 +66,87 @@ function App() {
        !location.pathname.startsWith('/product-detail/') &&
        location.pathname !== '/close-notification' ? (
         <>
-          <nav className="navbar navbar-expand navbar-dark bg-dark">
+          <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
             <Link to={"/"} className="navbar-brand">
               SCG Bot Admin
             </Link>
-            <div className="navbar-nav mr-auto">
-              {currentUser && (
-                <>
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbarNav"
+              aria-controls="navbarNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+            <div className="collapse navbar-collapse" id="navbarNav">
+              <div className="navbar-nav mr-auto">
+                {currentUser && (
+                  <>
+                    <li className="nav-item">
+                      <Link to={"/dashboard"} className="nav-link">
+                        Dashboard
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/products"} className="nav-link">
+                        Products
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/group-orders"} className="nav-link">
+                        Group Orders
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/orders"} className="nav-link">
+                        Orders
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/collections"} className="nav-link">
+                        Collections
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/brands"} className="nav-link">
+                        Brands
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/in-stock"} className="nav-link">
+                        In Stock
+                      </Link>
+                    </li>
+                  </>
+                )}
+              </div>
+
+              {currentUser ? (
+                <div className="navbar-nav ms-auto">
                   <li className="nav-item">
-                    <Link to={"/dashboard"} className="nav-link">
-                      Dashboard
-                    </Link>
+                    <span className="nav-link">
+                      {currentUser.username}
+                    </span>
                   </li>
                   <li className="nav-item">
-                    <Link to={"/products"} className="nav-link">
-                      Products
-                    </Link>
+                    <a href="/login" className="nav-link" onClick={logOut}>
+                      LogOut
+                    </a>
                   </li>
+                </div>
+              ) : (
+                <div className="navbar-nav ms-auto">
                   <li className="nav-item">
-                    <Link to={"/group-orders"} className="nav-link">
-                      Group Orders
+                    <Link to={"/login"} className="nav-link">
+                      Login
                     </Link>
                   </li>
-                  <li className="nav-item">
-                    <Link to={"/orders"} className="nav-link">
-                      Orders
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link to={"/collections"} className="nav-link">
-                      Collections
-                    </Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link to={"/brands"} className="nav-link">
-                      Brands
-                    </Link>
-                  </li>
-                  
-                   <li className="nav-item">
-                    <Link to={"/in-stock"} className="nav-link">
-                      In Stock
-                    </Link>
-                  </li>
-                </>
+                </div>
               )}
             </div>
-
-            {currentUser ? (
-              <div className="navbar-nav ms-auto">
-                <li className="nav-item">
-                  <span className="nav-link">
-                    {currentUser.username}
-                  </span>
-                </li>
-                <li className="nav-item">
-                  <a href="/login" className="nav-link" onClick={logOut}>
-                    LogOut
-                  </a>
-                </li>
-              </div>
-            ) : (
-              <div className="navbar-nav ms-auto">
-                <li className="nav-item">
-                  <Link to={"/login"} className="nav-link">
-                    Login
-                  </Link>
-                </li>
-              </div>
-            )}
           </nav>
         </>
       ) : null}

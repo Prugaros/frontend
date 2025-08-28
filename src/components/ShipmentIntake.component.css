@@ -1,0 +1,154 @@
+/* ShipmentIntake.component.css */
+
+/* Basic styling for the container */
+.shipment-intake-container {
+  padding: 15px;
+}
+
+/* Product list and item styling */
+.shipment-intake-product-list {
+  margin-top: 10px;
+}
+
+.shipment-intake-product-item {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px; /* Keep some space between items */
+  background-color: #fff;
+}
+
+.shipment-intake-product-item .card-title {
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+.shipment-intake-product-item .card-text {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  /* Reduce margins for brand and collection headings */
+  .mb-5 {
+    margin-bottom: 1rem !important; /* Reduce brand section margin */
+  }
+  .mb-4 {
+    margin-bottom: 0.75rem !important; /* Reduce collection section margin */
+  }
+  .mt-4 {
+    margin-top: 0.75rem !important; /* Reduce brand heading top margin */
+  }
+  .mt-3 {
+    margin-top: 0.5rem !important; /* Reduce collection heading top margin */
+  }
+
+  .shipment-intake-product-item {
+    margin-bottom: 5px !important; /* Reduce space between product items */
+  }
+
+  .shipment-intake-product-item .card-body {
+    padding: 8px; /* Further reduce padding inside the card body */
+  }
+
+  .shipment-intake-product-item .card-title {
+    font-size: 1em; /* Slightly smaller font for title */
+    margin-bottom: 2px; /* Reduce margin below title */
+  }
+
+  .shipment-intake-product-item .card-text {
+    font-size: 0.9em; /* Slightly smaller font for text */
+    margin-bottom: 5px; /* Reduce margin below text */
+  }
+
+  .shipment-intake-product-item .d-flex {
+    justify-content: center !important; /* Center buttons on mobile */
+  }
+
+  .shipment-intake-input {
+    width: 70px; /* Slightly smaller input width */
+    padding: 3px;
+  }
+
+  .shipment-intake-product-item .btn {
+    padding: 5px 10px; /* Smaller button padding */
+    font-size: 0.8em; /* Smaller button font size */
+  }
+}
+
+/* Input field styling for adjust quantity */
+.shipment-intake-input {
+  width: 80px; /* Keep a reasonable width */
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments for larger screens (making divs look like a table) */
+@media (min-width: 769px) {
+  .shipment-intake-product-list {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .shipment-intake-product-item {
+    display: table-row;
+    border: 1px solid #ddd;
+    margin-bottom: 0; /* Remove margin between rows */
+    background-color: #f9f9f9; /* Alternate row color */
+  }
+
+  .shipment-intake-product-item:nth-child(even) {
+    background-color: #fff;
+  }
+
+  .shipment-intake-product-item .card-body {
+    display: table-cell;
+    vertical-align: middle;
+    padding: 8px;
+    border: 1px solid #ddd;
+  }
+
+  .shipment-intake-product-item .card-title,
+  .shipment-intake-product-item .card-text {
+    margin-bottom: 0;
+  }
+
+  .shipment-intake-product-item .d-flex {
+    justify-content: flex-start !important; /* Align buttons to start in table view */
+  }
+
+  /* Simulate table headers */
+  .shipment-intake-product-list::before {
+    content: "";
+    display: table-header-group;
+  }
+
+  .shipment-intake-product-list::before > div {
+    display: table-row;
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+
+  .shipment-intake-product-list::before > div > div {
+    display: table-cell;
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  .shipment-intake-product-list::before > div > div:nth-child(1)::before { content: "Product Name"; }
+  .shipment-intake-product-list::before > div > div:nth-child(2)::before { content: "Ordered Quantity"; }
+  .shipment-intake-product-list::before > div > div:nth-child(3)::before { content: "Actions"; }
+}
+
+/* Ensure buttons and input align well */
+.shipment-intake-product-item .btn {
+  margin-right: 5px;
+}
+
+.shipment-intake-product-item .btn:last-child {
+  margin-right: 0;
+}
