@@ -128,6 +128,14 @@ const PackingOrders = () => {
     return <div>Error: {error}</div>;
   }
 
+  const getTotalQuantity = (orders) => {
+    return orders.reduce((total, order) => {
+      return total + order.orderItems.reduce((orderTotal, item) => {
+        return orderTotal + item.quantity;
+      }, 0);
+    }, 0);
+  };
+
   return (
     <div>
       <h2>Packing Orders for Group Order {group_order_id}</h2>
@@ -136,7 +144,7 @@ const PackingOrders = () => {
       {customers.map(customer => (
         <div key={customer.customer.id}>
           <h3>Customer: {customer.customer.name}</h3>
-          <p>Customer ID: {customer.customer.id}</p>
+          <p>Total Quantity: {getTotalQuantity(customer.orders)}</p>
           <h4>Items:</h4>
           <ul>
             {customer.orders.map(order => (
