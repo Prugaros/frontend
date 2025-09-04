@@ -24,6 +24,7 @@ const AddressForm = () => {
         items: [],
         subtotal: 0,
         shipping: 0,
+        appliedCredit: 0,
         total: 0
     });
     const [loading, setLoading] = useState(true);
@@ -153,6 +154,12 @@ const AddressForm = () => {
                                 <span>Shipping:</span>
                                 <span>${orderSummary.shipping}</span>
                             </div>
+                            {orderSummary.appliedCredit > 0 && (
+                                <div className="order-total">
+                                    <span>Credit Applied:</span>
+                                    <span>-${orderSummary.appliedCredit}</span>
+                                </div>
+                            )}
                             <hr />
                             <div className="order-total">
                                 <strong>Total:</strong>

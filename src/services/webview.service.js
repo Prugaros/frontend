@@ -88,6 +88,16 @@ class WebviewService {
   paymentSent(psid) {
     return axios.post(API_URL + 'payment-sent', { psid });
   }
+
+  getOrderSummary(psid) {
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      },
+      params: { psid }
+    };
+    return axios.get(API_URL + 'order-summary', config);
+  }
 }
 
 export default new WebviewService();
