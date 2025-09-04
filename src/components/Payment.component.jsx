@@ -29,12 +29,12 @@ const Payment = () => {
             <div className="payment-options mt-4">
                 <div className="payment-option">
                     <h4>Venmo (preferred)</h4>
-                    <p>@your-venmo-username</p>
-                    <p>(Last 4 digits: 1234 - Add this if needed)</p>
+                    <p>@naomiseijo</p>
+                    <p>(Last 4 digits: 5176 - Add this if needed)</p>
                 </div>
                 <div className="payment-option mt-4">
                     <h4>PayPal</h4>
-                    <p>your-paypal-email@example.com</p>
+                    <p>seijon386@yahoo.com</p>
                 </div>
             </div>
             <button className="btn btn-primary mt-4" onClick={handlePaymentSent}>
