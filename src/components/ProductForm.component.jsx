@@ -14,6 +14,7 @@ const ProductForm = () => {
 
   const initialProductState = {
     name: '',
+    product_url: '',
     description: '',
     price: '',
     images: [], // All images will be stored here
@@ -196,6 +197,10 @@ const ProductForm = () => {
         <div className="mb-3">
           <label htmlFor="name" className="form-label">Name</label>
           <input type="text" className="form-control" id="name" name="name" value={product.name} onChange={handleInputChange} required />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="product_url" className="form-label">Product URL</label>
+          <input type="text" className="form-control" id="product_url" name="product_url" value={product.product_url} onChange={handleInputChange} required />
         </div>
         <div className="mb-3">
           <label htmlFor="description" className="form-label">Description</label>
