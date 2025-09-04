@@ -134,22 +134,9 @@ const Cart = () => {
     return total.toFixed(2);
   };
 
-  const handleSubmitOrderAndClose = async () => {
-    console.log("handleSubmitOrderAndClose called.");
-    setError(''); // Clear previous errors
-    setIsUpdatingCart(true); // Indicate that an action is in progress
-
-    try {
-      // Call the new backend endpoint to finalize the order
-      await WebviewService.finalizeOrder(psid); // Assuming psid is available and correct
-      console.log("Order finalized in backend. Navigating to close notification.");
-      navigate(`/close-notification?psid=${psid}`);
-    } catch (e) {
-      console.error("Error finalizing order from Cart component:", e);
-      setError(e.response?.data?.message || e.message || "Error submitting order. Please try again.");
-    } finally {
-      setIsUpdatingCart(false);
-    }
+  const handleProceedToShipping = () => {
+    // The backend now handles state changes on cart updates, so we just navigate.
+    navigate(`/address?psid=${psid}`);
   };
 
   return (
@@ -163,62 +150,67 @@ const Cart = () => {
         <p>Your cart is empty.</p>
       ) : (
         <div>
-          {Object.entries(cart).map(([productId, quantity]) => {
-            const product = getProduct(productId);
-            // Ensure product exists and quantity is valid before rendering
-            if (!product || quantity <= 0) return null;
+          <div className="product-grid">
+            {Object.entries(cart).map(([productId, quantity]) => {
+              const product = getProduct(productId);
+              // Ensure product exists and quantity is valid before rendering
+              if (!product || quantity <= 0) return null;
 
-            return (
-              <div key={productId} className="product-container">
-                {product.images && product.images.length > 0 && (
-                  <img
-                    src={product.images[0]} // Use the first image from the 'images' array
-                    alt={product.name}
-                    className="product-image"
-                  />
-                )}
-                <div className="product-details-content">
-                  <h4>{product.name}</h4>
-                  <p>Price: ${parseFloat(product.price).toFixed(2)}</p>
-                  <div className="quantity-controls">
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => handleQuantityChange(productId, quantity - 1)}
-                      disabled={isUpdatingCart}
-                    >
-                      -
-                    </button>
-                    <span className="quantity">
-                      {quantity}
-                    </span>
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => handleQuantityChange(productId, quantity + 1)}
-                      disabled={isUpdatingCart}
-                    >
-                      +
-                    </button>
+              return (
+                <div key={productId} className="product-container">
+                  {product.images && product.images.length > 0 && (
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="product-image"
+                    />
+                  )}
+                  <div className="product-details-content">
+                    <ul className="product-details">
+                      <li>{product.name}</li>
+                      <li>Price: ${parseFloat(product.price).toFixed(2)}</li>
+                    </ul>
+                    <div className="quantity-section-inline">
+                      <label>Quantity:</label>
+                      <div className="quantity-controls">
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => handleQuantityChange(productId, quantity - 1)}
+                          disabled={isUpdatingCart}
+                        >
+                          -
+                        </button>
+                        <span className="quantity">
+                          {quantity}
+                        </span>
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => handleQuantityChange(productId, quantity + 1)}
+                          disabled={isUpdatingCart}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <button className="btn btn-danger btn-remove-from-cart" onClick={() => handleRemoveFromCart(productId)} disabled={isUpdatingCart}>Remove</button>
                   </div>
                 </div>
-                <div className="ms-auto"> {/* Use ms-auto for right alignment */}
-                  <button className="btn btn-danger" onClick={() => handleRemoveFromCart(productId)} disabled={isUpdatingCart}>Remove</button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
           {/* Subtotal */}
           <div className="order-total mt-3">
             Subtotal: ${calculateCartTotal()}
           </div>
 
           {/* Sticky Button Bar */}
-          <div className="sticky-bottom-buttons d-flex justify-content-around p-3 bg-light border-top">
+          <div className="sticky-bottom-buttons p-3">
             <button
               className="btn btn-primary flex-grow-1"
-              onClick={handleSubmitOrderAndClose}
+              onClick={handleProceedToShipping}
               disabled={isUpdatingCart}
             >
-              Submit Order
+              Proceed to Shipping
             </button>
           </div>
         </div>

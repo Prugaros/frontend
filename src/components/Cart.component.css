@@ -9,25 +9,31 @@
 /* Product Container */
 .product-container {
   display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  padding: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 20px;
+  padding: 15px;
   border: 1px solid #444;
   border-radius: 8px;
-  background-color: #363636; /* Dark background for product cards */
+  background-color: #363636;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .product-image {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: auto;
+  max-height: 250px;
   object-fit: cover;
   border-radius: 4px;
-  margin-right: 15px;
+  margin-bottom: 15px;
 }
 
 .product-details-content {
   flex-grow: 1;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .product-details {
@@ -39,20 +45,27 @@
 .product-details li {
   margin-bottom: 3px;
   font-size: 0.95rem;
-  color: #e0e0e0; /* Light text color */
+  color: #e0e0e0;
 }
 
 .product-details li:first-child {
   font-weight: bold;
   font-size: 1.1rem;
   margin-bottom: 5px;
-  color: #ffffff; /* Whiter for product name */
+  color: #ffffff;
 }
 
-.product-details li:last-child {
+.quantity-section-inline {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   margin-top: 8px;
+}
+
+.quantity-section-inline label {
+  margin-right: 10px;
+  font-weight: bold;
+  color: #e0e0e0;
 }
 
 /* Quantity Controls */
@@ -69,8 +82,8 @@
   font-size: 1rem;
   line-height: 1;
   border: none;
-  background-color: #4a4a4a; /* Darker button background */
-  color: #e0e0e0; /* Light button text */
+  background-color: #4a4a4a;
+  color: #e0e0e0;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -85,27 +98,32 @@
   width: 3rem;
   text-align: center;
   font-weight: bold;
-  color: #ffffff; /* Whiter for quantity display */
+  color: #ffffff;
   border-left: 1px solid #555;
   border-right: 1px solid #555;
 }
 
+.btn-remove-from-cart {
+  margin-top: 15px;
+  width: 100%;
+}
+
 /* Total display */
-.cart-total {
+.order-total {
   font-size: 1.2rem;
   font-weight: bold;
   text-align: right;
   margin-top: 20px;
   padding-top: 10px;
   border-top: 1px solid #444;
-  color: #ffffff; /* Whiter for total */
+  color: #ffffff;
 }
 
 /* Buttons */
 .btn-primary {
-  background-color: #8ab4f8; /* Light blue for primary button */
+  background-color: #8ab4f8;
   border-color: #8ab4f8;
-  color: #202124; /* Dark text for contrast */
+  color: #202124;
   padding: 10px 20px;
   font-size: 1.1rem;
   border-radius: 5px;
@@ -119,10 +137,7 @@
 .btn-danger {
   background-color: #dc3545;
   border-color: #dc3545;
-  color: #e0e0e0; /* Light text for danger button */
-  /*padding: 8px 15px;
-  font-size: 1rem;
-  border-radius: 5px;*/
+  color: #e0e0e0;
 }
 
 .btn-danger:hover {
@@ -134,33 +149,20 @@
 .sticky-bottom-buttons {
   position: sticky;
   bottom: 0;
-  z-index: 1000; /* Ensure it stays on top of other content */
-  width: 100%; /* Ensure it spans the full width */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
-  display: flex; /* Explicitly set display to flex */
-  flex-direction: row; /* Ensure items are in a row */
-  flex-wrap: nowrap; /* Prevent wrapping to new lines */
-  align-items: center; /* Vertically align items in the center */
+  z-index: 1000;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .product-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .product-image {
-    margin-right: 0;
-    margin-bottom: 10px;
-  }
-
-  .product-details li:last-child {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .quantity-controls {
-    margin-top: 5px;
+/* Desktop Grid Layout */
+@media (min-width: 769px) {
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
   }
 }

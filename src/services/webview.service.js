@@ -60,6 +60,34 @@ class WebviewService {
     // No request body needed for finalize-order, as it uses existing cart data from customer state
     return axios.post(API_URL + 'finalize-order', {}, config);
   }
+
+  getAddress(psid) {
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      },
+      params: { psid }
+    };
+    return axios.get(API_URL + 'address', config);
+  }
+
+  saveAddress(psid, address) {
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      },
+      params: { psid }
+    };
+    return axios.post(API_URL + 'address', address, config);
+  }
+
+  submitAddress(psid) {
+    return axios.post(API_URL + 'submit-address', { psid });
+  }
+
+  paymentSent(psid) {
+    return axios.post(API_URL + 'payment-sent', { psid });
+  }
 }
 
 export default new WebviewService();

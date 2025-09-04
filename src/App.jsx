@@ -16,7 +16,10 @@ import OrderList from './components/OrderList.component.jsx';
 import OrderDetail from './components/OrderDetail.component.jsx';
 import MessengerOrder from './components/MessengerOrder.component.jsx';
 import ProductDetail from './components/ProductDetail.component.jsx'; // Import the new component
+import AddressForm from './components/AddressForm.component.jsx';
 import CloseNotification from './components/CloseNotification.component.jsx'; // Import the new component
+import Payment from './components/Payment.component.jsx';
+import OrderSubmitted from './components/OrderSubmitted.component.jsx';
 import PurchaseList from './components/PurchaseList.component.jsx';
 import GroupOrderPurchaseList from './components/GroupOrderPurchaseList.component.jsx';
 import PurchaseOrderList from './components/PurchaseOrderList.component.jsx';
@@ -24,6 +27,7 @@ import InStockProducts from './components/InStockProducts.jsx';
 import ShipmentManifest from './components/ShipmentManifest.component.jsx';
 import PackingOrders from './components/PackingOrders.component.jsx';
 import PrivacyPolicy from './components/PrivacyPolicy.component.jsx';
+import StoreCredit from './components/StoreCredit.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -48,6 +52,10 @@ function App() {
     setCurrentUser(undefined);
   };
 
+  const handleLoginSuccess = () => {
+    setCurrentUser(AuthService.getCurrentUser());
+  };
+
   // Basic protected route wrapper
   const ProtectedRoute = ({ children }) => {
     if (!currentUser) {
@@ -56,15 +64,21 @@ function App() {
     return children;
   };
 
+  const isWebview = location.pathname === '/messenger-order' ||
+                    location.pathname === '/cart' ||
+                    location.pathname.startsWith('/product-detail/') ||
+                    location.pathname === '/close-notification' ||
+                    location.pathname === '/address' ||
+                    location.pathname === '/payment' ||
+                    location.pathname === '/order-submitted';
+
+  const containerClass = isWebview ? '' : 'container mt-3';
 
   return (
     <div>
       {/* Hide Nav for the messenger webview route? Or adjust layout */}
       {/* We might need a way to detect if it's in the webview */}
-      {location.pathname !== '/messenger-order' &&
-       location.pathname !== '/cart' &&
-       !location.pathname.startsWith('/product-detail/') &&
-       location.pathname !== '/close-notification' ? (
+      {!isWebview ? (
         <>
           <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
             <Link to={"/"} className="navbar-brand">
@@ -120,6 +134,11 @@ function App() {
                         In Stock
                       </Link>
                     </li>
+                    <li className="nav-item">
+                      <Link to={"/store-credit"} className="nav-link">
+                        Store Credit
+                      </Link>
+                    </li>
                   </>
                 )}
               </div>
@@ -151,14 +170,17 @@ function App() {
         </>
       ) : null}
 
-      <div className="container mt-3">
+      <div className={containerClass}>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* Messenger Webview Routes (Public) */}
           <Route path="/messenger-order" element={<MessengerOrder />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/address" element={<AddressForm />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/order-submitted" element={<OrderSubmitted />} />
           <Route path="/product-detail/:productId" element={<ProductDetail />} /> {/* New Product Detail Route */}
           <Route path="/close-notification" element={<CloseNotification />} /> {/* New Close Notification Route */}
 
@@ -192,6 +214,7 @@ function App() {
           <Route path="/shipment-intake/:groupOrderId" element={<ProtectedRoute><ShipmentIntake /></ProtectedRoute>} />
           <Route path="/packing-orders/:group_order_id" element={<ProtectedRoute><PackingOrders /></ProtectedRoute>} />
           <Route path="/shipment-manifest/:group_order_id" element={<ProtectedRoute><ShipmentManifest /></ProtectedRoute>} />
+          <Route path="/store-credit" element={<ProtectedRoute><StoreCredit /></ProtectedRoute>} />
 
           {/* Redirect unknown protected paths to dashboard, others to login */}
           <Route path="*" element={currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />

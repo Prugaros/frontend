@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import WebviewService from '../services/webview.service';
 import './MessengerOrder.component.css';
@@ -7,6 +8,36 @@ import _ from 'lodash';
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
+
+const BrandSelectionModal = ({ isOpen, onClose, brands, setActiveTab }) => {
+  if (!isOpen) return null;
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleBrandClick = (brandId) => {
+    setActiveTab(brandId);
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-content">
+        <h2>Select a Brand</h2>
+        <button onClick={() => handleBrandClick('featured')}>Featured</button>
+        {brands.map(brand => (
+          <button key={brand.id} onClick={() => handleBrandClick(brand.id)}>
+            {brand.name}
+          </button>
+        ))}
+        <button onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+};
 
 const MessengerOrder = () => {
   const query = useQuery();
@@ -21,6 +52,7 @@ const MessengerOrder = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('activeTab') || 'featured');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [featuredData, setFeaturedData] = useState({ featuredCollections: [], otherFeaturedItems: [] });
   const [brandDataCache, setBrandDataCache] = useState({}); // Cache for brand data
   const [loadingTab, setLoadingTab] = useState(false);
@@ -139,6 +171,10 @@ const MessengerOrder = () => {
     }, 0).toFixed(2);
   };
 
+  const cartItemCount = useMemo(() => {
+    return Object.values(cart).reduce((count, quantity) => count + quantity, 0);
+  }, [cart]);
+
   const handleSaveAndClose = () => {
     setIsSaving(true);
     WebviewService.updateCart(psid, { items: cart })
@@ -178,14 +214,16 @@ const MessengerOrder = () => {
     return filteredCollections.map(collection => (
         <div key={collection.id} className="mb-4">
             <h4>{collection.name || collection.Name}</h4>
-            {collection.products.map(product => (
-                <ProductRow key={product.id} product={product} />
-            ))}
+            <div className="product-grid">
+                {collection.products.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                ))}
+            </div>
         </div>
     ));
   };
   
-  const ProductRow = ({ product }) => (
+  const ProductCard = ({ product }) => (
     <div key={product.id} className="product-container">
       <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-image-link" onClick={handleProductLinkClick}>
         {product.images && product.images.length > 0 && (
@@ -211,47 +249,60 @@ const MessengerOrder = () => {
     </div>
   );
 
+  const activeBrandName = activeTab === 'featured' 
+    ? 'Featured' 
+    : brands.find(b => b.id === activeTab)?.name || 'Select a Brand';
+
   if (loading) return <div className="container mt-3"><p>Loading order details...</p></div>;
   if (error) return <div className="container mt-3"><div className="alert alert-danger">{error}</div></div>;
 
   return (
     <div className="container">
+      <BrandSelectionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        brands={brands}
+        setActiveTab={setActiveTab}
+      />
       <h3>{groupOrderName || 'Order Items'}</h3>
 
       <div className="sticky-top">
-        <ul className="nav nav-tabs">
-          <li className="nav-item">
-            <a className={`nav-link ${activeTab === 'featured' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('featured')}>Featured</a>
-          </li>
-          {brands.map(brand => (
-            <li className="nav-item" key={brand.id}>
-              <a className={`nav-link ${activeTab === brand.id ? 'active' : ''}`} href="#" onClick={() => setActiveTab(brand.id)}>{brand.name}</a>
-            </li>
-          ))}
-        </ul>
-        <div className="search-bar-container">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search by name..."
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="controls-container">
+          <div className="dropdown-container">
+            <button onClick={() => setIsModalOpen(true)} className="dropdown-button">
+              {activeBrandName} <i className="fas fa-chevron-down"></i>
+            </button>
+          </div>
+          <div className="search-bar-container">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search by name..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Link to={`/cart?psid=${psid}`} className="cart-icon-link">
+            <i className="fas fa-shopping-cart"></i>
+            {cartItemCount > 0 && <span className="cart-item-count">{cartItemCount}</span>}
+          </Link>
         </div>
       </div>
+      <div>
+        <p className="text-muted mt-3">Tap on an item for more details or adjust quantities below. Set quantity to 0 to remove an item.</p>
+        {error && <div className="alert alert-danger">{error}</div>}
 
-      <p className="text-muted mt-3">Tap on an item for more details or adjust quantities below. Set quantity to 0 to remove an item.</p>
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <div className="tab-content mt-3">
-        {activeTab === 'featured' ? (
-          <div>
+        <div className="tab-content mt-3">
+          {activeTab === 'featured' ? (
+            <div>
             {renderCollections(featuredData.featuredCollections)}
             {featuredData.otherFeaturedItems.length > 0 && (
               <>
                 <h4>Other Featured Items</h4>
-                {featuredData.otherFeaturedItems.filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
-                    <ProductRow key={product.id} product={product} />
-                ))}
+                <div className="product-grid">
+                    {featuredData.otherFeaturedItems.filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
               </>
             )}
           </div>
@@ -262,23 +313,19 @@ const MessengerOrder = () => {
               {brandDataCache[activeTab]?.otherBrandItems?.length > 0 && (
                 <>
                   <h4>Other {brandDataCache[activeTab]?.name} Items</h4>
-                  {brandDataCache[activeTab].otherBrandItems
-                    .filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .map(product => (
-                      <ProductRow key={product.id} product={product} />
-                  ))}
+                    <div className="product-grid">
+                        {brandDataCache[activeTab].otherBrandItems
+                        .filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(product => (
+                            <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
                 </>
               )}
             </div>
           )
         )}
-      </div>
-
-      <div className="mt-3 d-grid gap-2 sticky-bottom">
-        <div className="order-total">Subtotal: ${calculateTotal()}</div>
-        <button className="btn btn-primary" onClick={handleSaveAndClose} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Continue to Cart'}
-        </button>
+        </div>
       </div>
     </div>
   );

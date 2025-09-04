@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import AuthService from '../services/auth.service';
 // Optional: Use useNavigate for redirection after login
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Login = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  // const navigate = useNavigate(); // For redirection
+  const navigate = useNavigate(); // For redirection
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -16,10 +16,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await AuthService.login(username, password);
+      const user = await AuthService.login(username, password);
+      onLoginSuccess(user);
       // Login successful, redirect to a protected route (e.g., dashboard)
-      // navigate('/dashboard'); // Example redirection
-      window.location.reload(); // Simple reload for now
+      navigate('/dashboard'); // Example redirection
     } catch (error) {
       const resMessage =
         (error.response &&
