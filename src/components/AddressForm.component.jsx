@@ -61,10 +61,24 @@ const AddressForm = () => {
             ...prevAddress,
             [name]: value
         }));
+        if (error) {
+            setError('');
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        const missingFields = Object.entries(address)
+            .filter(([key, value]) => !value && key !== 'id' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'CustomerId')
+            .map(([key]) => key.replace('_', ' '));
+
+        if (missingFields.length > 0) {
+            setError(`Please fill out all required fields: ${missingFields.join(', ')}.`);
+            setIsEditing(true);
+            return;
+        }
+
         setIsSaving(true);
         WebviewService.saveAddress(psid, address)
             .then(() => {

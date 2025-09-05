@@ -28,6 +28,8 @@ import ShipmentManifest from './components/ShipmentManifest.component.jsx';
 import PackingOrders from './components/PackingOrders.component.jsx';
 import PrivacyPolicy from './components/PrivacyPolicy.component.jsx';
 import StoreCredit from './components/StoreCredit.component.jsx';
+import GroupOrderSelection from './components/GroupOrderSelection.component.jsx';
+import WebviewService from './services/webview.service.js';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -39,13 +41,56 @@ import './App.css';
 function App() {
   const location = useLocation(); // Call useLocation unconditionally as the very first hook
   const [currentUser, setCurrentUser] = useState(undefined);
+  const [psid, setPsid] = useState('');
+  const [needsGroupOrderSelection, setNeedsGroupOrderSelection] = useState(false);
+  const [isWebviewLoading, setWebviewLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const isWebview = location.pathname === '/messenger-order' ||
+                    location.pathname === '/cart' ||
+                    location.pathname.startsWith('/product-detail/') ||
+                    location.pathname === '/close-notification' ||
+                    location.pathname === '/address' ||
+                    location.pathname === '/payment' ||
+                    location.pathname === '/order-submitted';
+
+  const fetchWebviewData = (psidParam) => {
+    setWebviewLoading(true);
+    setNeedsGroupOrderSelection(false);
+    setError('');
+    WebviewService.getOrderData(psidParam)
+      .then(response => {
+        setWebviewLoading(false);
+      })
+      .catch(error => {
+        if (error.response && error.response.status === 403) {
+          setNeedsGroupOrderSelection(true);
+        } else {
+          console.error("Error fetching initial data:", error);
+          setError("Failed to load order data. Please try again.");
+        }
+        setWebviewLoading(false);
+      });
+  };
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const psidParam = urlParams.get('psid');
+    if (psidParam) {
+      setPsid(psidParam);
+      if (isWebview) {
+        fetchWebviewData(psidParam);
+      }
+    } else if (isWebview) {
+      setError("Missing PSID. Please access this page through Messenger.");
+      setWebviewLoading(false);
+    }
+
     const user = AuthService.getCurrentUser();
     if (user) {
       setCurrentUser(user);
     }
-  }, []);
+  }, [location.pathname]);
 
   const logOut = () => {
     AuthService.logout();
@@ -64,15 +109,19 @@ function App() {
     return children;
   };
 
-  const isWebview = location.pathname === '/messenger-order' ||
-                    location.pathname === '/cart' ||
-                    location.pathname.startsWith('/product-detail/') ||
-                    location.pathname === '/close-notification' ||
-                    location.pathname === '/address' ||
-                    location.pathname === '/payment' ||
-                    location.pathname === '/order-submitted';
-
   const containerClass = isWebview ? '' : 'container mt-3';
+
+  if (isWebview) {
+    if (isWebviewLoading) {
+      return <div>Loading...</div>;
+    }
+    if (error) {
+      return <div>Error: {error}</div>;
+    }
+    if (needsGroupOrderSelection) {
+      return <GroupOrderSelection psid={psid} onGroupOrderSelected={() => fetchWebviewData(psid)} />;
+    }
+  }
 
   return (
     <div>

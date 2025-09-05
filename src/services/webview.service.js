@@ -98,6 +98,22 @@ class WebviewService {
     };
     return axios.get(API_URL + 'order-summary', config);
   }
+
+  getActiveGroupOrders() {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' }
+    };
+    return axios.get(API_URL + 'active-group-orders', config);
+  }
+
+  setGroupOrder(psid, groupOrderId) {
+    const config = {
+      headers: {
+        'ngrok-skip-browser-warning': 'any-value'
+      }
+    };
+    return axios.post(API_URL + 'set-group-order', { psid, groupOrderId }, config);
+  }
 }
 
 export default new WebviewService();
