@@ -39,18 +39,11 @@ const OrderDetail = () => {
   const handleMarkAsPaid = () => {
     setIsUpdatingPayment(true);
     setPaymentMessage('');
-    OrderService.updatePaymentStatus(id, 'Paid')
+    OrderService.markAsPaid(order.customer.id, order.group_order_id)
       .then(() => {
-        setPaymentMessage('Order marked as Paid successfully!');
+        setPaymentMessage('Order marked as Paid and summary sent successfully!');
         setIsUpdatingPayment(false);
-        OrderService.triggerPaymentVerification(id)
-          .then(() => {
-            navigate('/orders');
-          })
-          .catch(e => {
-            setPaymentMessage(e.response?.data?.message || e.message || 'Error triggering payment verification.');
-            retrieveOrder();
-          });
+        navigate('/orders');
       })
       .catch(e => {
         setPaymentMessage(e.response?.data?.message || e.message || 'Error marking order as Paid.');

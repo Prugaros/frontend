@@ -34,6 +34,10 @@ class OrderService {
     return axios.post(API_URL + id + '/trigger-payment-verification', {}, { headers: AuthService.getAuthHeader() });
   }
 
+  markAsPaid(customerId, groupOrderId) {
+    return axios.post(API_URL + 'mark-as-paid', { customerId, groupOrderId }, { headers: AuthService.getAuthHeader() });
+  }
+
   // Export orders as CSV
   // filters should include { groupOrderId, packageType }
   exportCsv(filters) {
