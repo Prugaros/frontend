@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import WebviewService from '../services/webview.service';
+import { getData } from 'country-list';
 import './AddressForm.component.css';
 
 function useQuery() {
@@ -18,8 +19,25 @@ const AddressForm = () => {
         street_address: '',
         city: '',
         state: '',
-        zip: ''
+        zip: '',
+        country: 'United States',
+        international_address_block: ''
     });
+    const countryOptions = useMemo(() => {
+        const countries = getData().map(country => {
+            if (country.name === 'United States of America (the)') {
+                return { ...country, name: 'United States' };
+            }
+            return country;
+        }).sort((a, b) => a.name.localeCompare(b.name));
+
+        const usIndex = countries.findIndex(c => c.name === 'United States');
+        if (usIndex > -1) {
+            const [us] = countries.splice(usIndex, 1);
+            countries.unshift(us);
+        }
+        return countries;
+    }, []);
     const [orderSummary, setOrderSummary] = useState({
         items: [],
         subtotal: 0,
@@ -69,9 +87,14 @@ const AddressForm = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const missingFields = Object.entries(address)
-            .filter(([key, value]) => !value && key !== 'id' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'CustomerId')
-            .map(([key]) => key.replace('_', ' '));
+        const requiredFields = ['name', 'email', 'country'];
+        if (address.country === 'United States') {
+            requiredFields.push('street_address', 'city', 'state', 'zip');
+        } else {
+            requiredFields.push('international_address_block');
+        }
+
+        const missingFields = requiredFields.filter(field => !address[field]);
 
         if (missingFields.length > 0) {
             setError(`Please fill out all required fields: ${missingFields.join(', ')}.`);
@@ -118,30 +141,54 @@ const AddressForm = () => {
                                     <input type="email" name="email" className="form-control" value={address.email} onChange={handleChange} required />
                                 </div>
                                 <div className="form-group">
-                                    <label>Street Address</label>
-                                    <input type="text" name="street_address" className="form-control" value={address.street_address} onChange={handleChange} required />
+                                    <label>Country</label>
+                                    <select name="country" className="form-control" value={address.country} onChange={handleChange}>
+                                        {countryOptions.map(({ code, name }) => (
+                                            <option key={code} value={name}>{name}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div className="form-group">
-                                    <label>City</label>
-                                    <input type="text" name="city" className="form-control" value={address.city} onChange={handleChange} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>State</label>
-                                    <input type="text" name="state" className="form-control" value={address.state} onChange={handleChange} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>Zip Code</label>
-                                    <input type="text" name="zip" className="form-control" value={address.zip} onChange={handleChange} required />
-                                </div>
+                                {address.country === 'United States' ? (
+                                    <>
+                                        <div className="form-group">
+                                            <label>Street Address</label>
+                                            <input type="text" name="street_address" className="form-control" value={address.street_address} onChange={handleChange} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>City</label>
+                                            <input type="text" name="city" className="form-control" value={address.city} onChange={handleChange} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>State</label>
+                                            <input type="text" name="state" className="form-control" value={address.state} onChange={handleChange} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Zip Code</label>
+                                            <input type="text" name="zip" className="form-control" value={address.zip} onChange={handleChange} required />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="form-group">
+                                        <label>Address</label>
+                                        <textarea name="international_address_block" className="form-control" value={address.international_address_block} onChange={handleChange} required />
+                                    </div>
+                                )}
                             </>
                         ) : (
                             <div className="address-display">
                                 <p><strong>Full Name:</strong> {address.name}</p>
                                 <p><strong>Email:</strong> {address.email}</p>
-                                <p><strong>Street Address:</strong> {address.street_address}</p>
-                                <p><strong>City:</strong> {address.city}</p>
-                                <p><strong>State:</strong> {address.state}</p>
-                                <p><strong>Zip Code:</strong> {address.zip}</p>
+                                <p><strong>Country:</strong> {address.country}</p>
+                                {address.country === 'United States' ? (
+                                    <>
+                                        <p><strong>Street Address:</strong> {address.street_address}</p>
+                                        <p><strong>City:</strong> {address.city}</p>
+                                        <p><strong>State:</strong> {address.state}</p>
+                                        <p><strong>Zip Code:</strong> {address.zip}</p>
+                                    </>
+                                ) : (
+                                    <p><strong>Address:</strong> <pre>{address.international_address_block}</pre></p>
+                                )}
                                 <div className="edit-button-container">
                                     <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(true)}>
                                         Edit
