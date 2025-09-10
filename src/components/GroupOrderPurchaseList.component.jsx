@@ -24,7 +24,10 @@ const GroupOrderPurchaseList = () => {
 
   useEffect(() => {
     const grouped = purchaseList.reduce((acc, item) => {
-      const group = item.group || 'Unknown Brand';
+      let group = item.group || 'Unknown Brand';
+      if (item.brandName === 'Ohora' && item.isDisneyStore) {
+        group = 'Ohora - Disney Store';
+      }
       if (!acc[group]) {
         acc[group] = [];
       }

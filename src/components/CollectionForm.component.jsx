@@ -12,6 +12,7 @@ const CollectionForm = () => {
     DisplayOrder: '',
     isActive: true,
     is_featured: false,
+    isDisneyStore: false,
     brandId: ''
   });
   const [brands, setBrands] = useState([]);
@@ -43,6 +44,7 @@ const CollectionForm = () => {
           DisplayOrder: response.data.DisplayOrder || '',
           isActive: response.data.isActive,
           is_featured: response.data.is_featured,
+          isDisneyStore: response.data.isDisneyStore,
           brandId: response.data.brandId || ''
         });
         setLoading(false);
@@ -150,6 +152,20 @@ const CollectionForm = () => {
         />
         <label className="form-check-label" htmlFor="is_featured">Featured</label>
       </div>
+
+      {collection.brandId && brands.find(b => b.id === parseInt(collection.brandId))?.name === 'Ohora' && (
+        <div className="mb-3 form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id="isDisneyStore"
+            name="isDisneyStore"
+            checked={collection.isDisneyStore}
+            onChange={handleChange}
+          />
+          <label className="form-check-label" htmlFor="isDisneyStore">Disney Store</label>
+        </div>
+      )}
 
       <button onClick={saveCollection} className="btn btn-primary" disabled={loading}>
         {loading ? 'Saving...' : 'Save'}
