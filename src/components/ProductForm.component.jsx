@@ -17,6 +17,7 @@ const ProductForm = () => {
     product_url: '',
     description: '',
     price: '',
+    MSRP: '',
     images: [], // All images will be stored here
     weight_oz: '',
     is_active: true,
@@ -168,6 +169,7 @@ const ProductForm = () => {
     const dataToSubmit = {
         ...product,
         price: parseFloat(product.price) || 0,
+        MSRP: product.MSRP ? parseInt(product.MSRP) : null,
         weight_oz: product.weight_oz ? parseFloat(product.weight_oz) : null,
         collectionId: product.collectionId === '' ? null : parseInt(product.collectionId),
         brandId: parseInt(product.brandId),
@@ -207,11 +209,15 @@ const ProductForm = () => {
           <textarea className="form-control" id="description" name="description" value={product.description} onChange={handleInputChange} />
         </div>
          <div className="row">
-            <div className="col-md-6 mb-3">
+            <div className="col-md-4 mb-3">
                 <label htmlFor="price" className="form-label">Price ($)</label>
                 <input type="number" step="0.01" className="form-control" id="price" name="price" value={product.price} onChange={handleInputChange} required />
             </div>
-             <div className="col-md-6 mb-3">
+            <div className="col-md-4 mb-3">
+                <label htmlFor="MSRP" className="form-label">MSRP</label>
+                <input type="number" step="1" className="form-control" id="MSRP" name="MSRP" value={product.MSRP} onChange={handleInputChange} />
+            </div>
+             <div className="col-md-4 mb-3">
                 <label htmlFor="weight_oz" className="form-label">Weight (oz)</label>
                 <input type="number" step="0.1" className="form-control" id="weight_oz" name="weight_oz" value={product.weight_oz} onChange={handleInputChange} />
             </div>
