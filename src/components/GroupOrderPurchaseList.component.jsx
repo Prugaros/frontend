@@ -101,12 +101,30 @@ const GroupOrderPurchaseList = () => {
     }, 0);
   };
 
+  const calculateGroupQuantity = (items) => {
+    return items.reduce((total, item) => {
+      if (outOfStockItems[item.productId]) {
+        return total;
+      }
+      return total + item.quantity;
+    }, 0);
+  };
+
   const calculateTotalMSRP = () => {
     return Object.values(groupedPurchaseList).flat().reduce((total, item) => {
       if (outOfStockItems[item.productId]) {
         return total;
       }
       return total + (item.MSRP * item.quantity);
+    }, 0);
+  };
+
+  const calculateTotalQuantity = () => {
+    return Object.values(groupedPurchaseList).flat().reduce((total, item) => {
+      if (outOfStockItems[item.productId]) {
+        return total;
+      }
+      return total + item.quantity;
     }, 0);
   };
 
@@ -124,6 +142,7 @@ const GroupOrderPurchaseList = () => {
   const totalMSRP = calculateTotalMSRP();
   const totalDiscount = calculateTotalDiscount();
   const amountNeeded = totalMSRP - totalDiscount - accountBalance;
+  const totalQuantity = calculateTotalQuantity();
 
   return (
     <div>
@@ -173,6 +192,8 @@ const GroupOrderPurchaseList = () => {
               </tbody>
             </table>
             <div>
+              <strong>Group Total Quantity: {calculateGroupQuantity(items)}</strong>
+              <br />
               <strong>Group Total MSRP: {calculateGroupTotal(items)}</strong>
             </div>
             <div>
@@ -196,6 +217,7 @@ const GroupOrderPurchaseList = () => {
       )}
       <div>
         <h3>Cost Calculator</h3>
+        <p>Total Quantity to Purchase: {totalQuantity}</p>
         <p>Total MSRP: {totalMSRP}</p>
         <p>Total Discounts: {totalDiscount.toFixed(2)}</p>
         <div>
