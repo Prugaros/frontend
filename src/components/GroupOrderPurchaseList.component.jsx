@@ -78,6 +78,7 @@ const GroupOrderPurchaseList = () => {
     purchaseOrderService.createPurchaseOrder(groupOrderId, purchaseOrderItems)
       .then(response => {
         alert("Purchase order created successfully!");
+        setPurchasedQuantities({});
         purchaseListService.getPurchaseListForGroupOrder(groupOrderId)
           .then(response => {
             setPurchaseList(response.data);
