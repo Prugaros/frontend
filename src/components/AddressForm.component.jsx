@@ -49,6 +49,7 @@ const AddressForm = () => {
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [hasPaidOrders, setHasPaidOrders] = useState(false);
 
     useEffect(() => {
         if (!psid) {
@@ -58,9 +59,10 @@ const AddressForm = () => {
         }
         WebviewService.getAddress(psid)
             .then(response => {
-                const { address, orderSummary } = response.data;
+                const { address, orderSummary, hasPaidOrders } = response.data;
                 setAddress(address);
                 setOrderSummary(orderSummary);
+                setHasPaidOrders(hasPaidOrders);
                 // If there's no name, assume it's a new customer and start in editing mode.
                 if (!address.name) {
                     setIsEditing(true);
@@ -72,6 +74,30 @@ const AddressForm = () => {
                 setLoading(false);
             });
     }, [psid]);
+
+    useEffect(() => {
+        const calculateShipping = () => {
+            const { country } = address;
+            const { items, subtotal, appliedCredit } = orderSummary;
+            let shipping = 0;
+            if (country === 'United States') {
+                shipping = hasPaidOrders ? 0 : 5;
+            } else {
+                const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+                shipping = totalQuantity * 1.70;
+            }
+            const total = parseFloat(subtotal) + shipping - parseFloat(appliedCredit);
+            setOrderSummary(prevSummary => ({
+                ...prevSummary,
+                shipping: shipping.toFixed(2),
+                total: total.toFixed(2)
+            }));
+        };
+
+        if (orderSummary.items.length > 0) {
+            calculateShipping();
+        }
+    }, [address.country, orderSummary.items, orderSummary.subtotal, orderSummary.appliedCredit, hasPaidOrders]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
