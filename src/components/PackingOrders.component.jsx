@@ -8,7 +8,8 @@ const activeButtonStyle = {
   padding: '10px 15px',
   margin: '5px',
   cursor: 'pointer',
-  fontSize: '16px'
+  fontSize: '16px',
+  color: 'white'
 };
 const inactiveButtonStyle = {
   backgroundColor: 'gray',
@@ -16,7 +17,8 @@ const inactiveButtonStyle = {
   padding: '10px 15px',
   margin: '5px',
   cursor: 'pointer',
-  fontSize: '16px'
+  fontSize: '16px',
+  color: 'white'
 };
 
 const buttonContainerStyle = {
@@ -32,14 +34,44 @@ const PackingOrders = () => {
   const [packed, setPacked] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [materialSummary, setMaterialSummary] = useState({});
-  const [packageType, setPackageType] = useState('polymailer'); // Default to polymailer
-  const [packageLength, setPackageLength] = useState('');
-  const [packageWidth, setPackageWidth] = useState('');
-  const [packageHeight, setPackageHeight] = useState('');
-  const [totalWeightOz, setTotalWeightOz] = useState('');
-  const [polymailerSize, setPolymailerSize] = useState('');
-  const [boxType, setBoxType] = useState('');
+  const [packingDetails, setPackingDetails] = useState({});
+  const [isMaterialSummaryCollapsed, setIsMaterialSummaryCollapsed] = useState(true);
 
+
+  const getSuggestedPackaging = (totalItems) => {
+    if (totalItems >= 1 && totalItems <= 2) {
+      return { packageType: 'polymailer', polymailerSize: 'small', packageLength: '6', packageWidth: '10', packageHeight: '' };
+    } else if (totalItems >= 3 && totalItems <= 6) {
+      return { packageType: 'polymailer', polymailerSize: 'medium', packageLength: '8.5', packageWidth: '12', packageHeight: '' };
+    } else if (totalItems >= 7 && totalItems <= 13) {
+      return { packageType: 'polymailer', polymailerSize: 'large', packageLength: '10.5', packageWidth: '16', packageHeight: '' };
+    } else if (totalItems >= 14 && totalItems <= 18) {
+      return { packageType: 'box', boxType: 'standard', packageLength: '6', packageWidth: '6', packageHeight: '6' };
+    } else if (totalItems > 18) {
+      return { packageType: 'box', boxType: 'custom', packageLength: '', packageWidth: '', packageHeight: '' };
+    }
+    return { packageType: 'polymailer', polymailerSize: '', packageLength: '', packageWidth: '', packageHeight: '', boxType: '' };
+  };
+
+  const handlePackingDetailChange = (customerId, field, value) => {
+    setPackingDetails(prevDetails => ({
+      ...prevDetails,
+      [customerId]: {
+        ...prevDetails[customerId],
+        [field]: value
+      }
+    }));
+  };
+
+  const updatePackingDetails = (customerId, newDetails) => {
+    setPackingDetails(prevDetails => ({
+      ...prevDetails,
+      [customerId]: {
+        ...prevDetails[customerId],
+        ...newDetails
+      }
+    }));
+  };
 
   // Helper function to process and sort orders
   const processAndSortOrders = (orders) => {
@@ -73,9 +105,11 @@ const PackingOrders = () => {
 
   const getTotalQuantity = (orders) => {
     return orders.reduce((total, order) => {
-      return total + order.orderItems.reduce((orderTotal, item) => {
-        return orderTotal + item.quantity;
-      }, 0);
+      return total + order.orderItems
+        .filter(item => item.status !== 'Refunded')
+        .reduce((orderTotal, item) => {
+          return orderTotal + item.quantity;
+        }, 0);
     }, 0);
   };
 
@@ -128,6 +162,17 @@ const PackingOrders = () => {
 
         const sortedCustomers = processAndSortOrders(allPaidOrders);
         setCustomers(sortedCustomers);
+
+        const initialPackingDetails = {};
+        sortedCustomers.forEach(customer => {
+          const totalItems = getTotalQuantity(customer.orders);
+          const suggestedPackaging = getSuggestedPackaging(totalItems);
+          initialPackingDetails[customer.customer.id] = {
+            ...suggestedPackaging,
+            totalWeightOz: ''
+          };
+        });
+        setPackingDetails(initialPackingDetails);
       } catch (err) {
         setError(err.message || 'Failed to fetch orders');
       } finally {
@@ -140,8 +185,11 @@ const PackingOrders = () => {
 
   const handleCompleteOrder = async (customer) => {
     try {
+      const customerId = customer.customer.id;
+      const details = packingDetails[customerId];
+
       // Validate input
-      if (!packageType) {
+      if (!details.packageType) {
         setError('Package type is required.');
         return;
       }
@@ -152,12 +200,12 @@ const PackingOrders = () => {
       // Submit packing information to backend for all orders in the manifest
       await OrderService.updateShippingManifest(group_order_id, {
         order_ids: orderIds, // Pass all order IDs in the request body
-        customer_id: customer.customer.id, // Pass the customer ID in the request body
-        package_type: packageType,
-        package_length: packageLength || null,
-        package_width: packageWidth || null,
-        package_height: packageHeight || null,
-        total_weight_oz: parseFloat(totalWeightOz) || null
+        customer_id: customerId, // Pass the customer ID in the request body
+        package_type: details.packageType,
+        package_length: details.packageLength || null,
+        package_width: details.packageWidth || null,
+        package_height: details.packageHeight || null,
+        total_weight_oz: parseFloat(details.totalWeightOz) || null
       });
 
       // Refresh orders after packing
@@ -183,17 +231,19 @@ const PackingOrders = () => {
     <div>
       <h2>Packing Orders for Group Order {group_order_id}</h2>
       <div className="card my-3">
-        <div className="card-header">
-          Material Summary
+        <div className="card-header" onClick={() => setIsMaterialSummaryCollapsed(!isMaterialSummaryCollapsed)} style={{ cursor: 'pointer' }}>
+          Material Summary {isMaterialSummaryCollapsed ? '▼' : '▲'}
         </div>
-        <ul className="list-group list-group-flush">
-          {Object.entries(materialSummary).map(([material, count]) => (
-            <li key={material} className="list-group-item d-flex justify-content-between align-items-center">
-              {material.charAt(0).toUpperCase() + material.slice(1)}
-              <span className="badge bg-primary rounded-pill">{count}</span>
-            </li>
-          ))}
-        </ul>
+        {!isMaterialSummaryCollapsed && (
+          <ul className="list-group list-group-flush">
+            {Object.entries(materialSummary).map(([material, count]) => (
+              <li key={material} className="list-group-item d-flex justify-content-between align-items-center">
+                {material.charAt(0).toUpperCase() + material.slice(1)}
+                <span className="badge bg-primary rounded-pill">{count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <Link to={`/shipment-manifest/${group_order_id}`}>Shipment Manifest</Link>
       {packed && <p>All Orders Packed! Continue to <Link to={`/shipment-manifest/${group_order_id}`}>Shipment Manifest</Link></p>}
@@ -204,82 +254,88 @@ const PackingOrders = () => {
           <h4>Items:</h4>
           <ul>
             {customer.orders.map(order => (
-              order.orderItems.map(item => (
-                <li key={item.id}>
-                  {item.orderProduct.name} (Quantity: {item.quantity})
-                </li>
-              ))
+              order.orderItems
+                .filter(item => item.status !== 'Refunded')
+                .map(item => (
+                  <li key={item.id}>
+                    {item.orderProduct.name} (Quantity: {item.quantity})
+                  </li>
+                ))
             ))}
           </ul>
           <div>
             <h4>Shipping Information</h4>
             <div style={buttonContainerStyle}>
               <button
-                style={packageType === 'polymailer' ? activeButtonStyle : inactiveButtonStyle}
+                style={packingDetails[customer.customer.id]?.packageType === 'polymailer' ? activeButtonStyle : inactiveButtonStyle}
                 onClick={() => {
-                  setPackageType('polymailer');
-                  setPolymailerSize('');
-                  setBoxType('');
-                  setPackageLength('');
-                  setPackageWidth('');
-                  setPackageHeight('');
+                  updatePackingDetails(customer.customer.id, {
+                    packageType: 'polymailer',
+                    polymailerSize: '',
+                    boxType: '',
+                    packageLength: '',
+                    packageWidth: '',
+                    packageHeight: ''
+                  });
                 }}>Polymailer</button>
               <button
-                style={packageType === 'box' ? activeButtonStyle : inactiveButtonStyle}
+                style={packingDetails[customer.customer.id]?.packageType === 'box' ? activeButtonStyle : inactiveButtonStyle}
                 onClick={() => {
-                  setPackageType('box');
-                  setBoxType('standard');
-                  setPolymailerSize('');
-                  setPackageLength('6');
-                  setPackageWidth('6');
-                  setPackageHeight('6');
+                  updatePackingDetails(customer.customer.id, {
+                    packageType: 'box',
+                    boxType: 'standard',
+                    polymailerSize: '',
+                    packageLength: '6',
+                    packageWidth: '6',
+                    packageHeight: '6'
+                  });
                 }}>Box</button>
             </div>
 
-            {packageType === 'polymailer' && (
+            {packingDetails[customer.customer.id]?.packageType === 'polymailer' && (
               <div style={buttonContainerStyle}>
                 <button
-                  style={polymailerSize === 'small' ? activeButtonStyle : inactiveButtonStyle}
-                  onClick={() => { setPolymailerSize('small'); setPackageLength('6'); setPackageWidth('10'); setPackageHeight(''); }}>Small</button>
+                  style={packingDetails[customer.customer.id]?.polymailerSize === 'small' ? activeButtonStyle : inactiveButtonStyle}
+                  onClick={() => updatePackingDetails(customer.customer.id, { polymailerSize: 'small', packageLength: '6', packageWidth: '10', packageHeight: '' })}>Small</button>
                 <button
-                  style={polymailerSize === 'medium' ? activeButtonStyle : inactiveButtonStyle}
-                  onClick={() => { setPolymailerSize('medium'); setPackageLength('8.5'); setPackageWidth('12'); setPackageHeight(''); }}>Medium</button>
+                  style={packingDetails[customer.customer.id]?.polymailerSize === 'medium' ? activeButtonStyle : inactiveButtonStyle}
+                  onClick={() => updatePackingDetails(customer.customer.id, { polymailerSize: 'medium', packageLength: '8.5', packageWidth: '12', packageHeight: '' })}>Medium</button>
                 <button
-                  style={polymailerSize === 'large' ? activeButtonStyle : inactiveButtonStyle}
-                  onClick={() => { setPolymailerSize('large'); setPackageLength('10.5'); setPackageWidth('16'); setPackageHeight(''); }}>Large</button>
+                  style={packingDetails[customer.customer.id]?.polymailerSize === 'large' ? activeButtonStyle : inactiveButtonStyle}
+                  onClick={() => updatePackingDetails(customer.customer.id, { polymailerSize: 'large', packageLength: '10.5', packageWidth: '16', packageHeight: '' })}>Large</button>
               </div>
             )}
 
-            {packageType === 'box' && (
+            {packingDetails[customer.customer.id]?.packageType === 'box' && (
               <div style={buttonContainerStyle}>
                 <button
-                  style={boxType === 'standard' ? activeButtonStyle : inactiveButtonStyle}
-                  onClick={() => { setBoxType('standard'); setPackageLength('6'); setPackageWidth('6'); setPackageHeight('6'); }}>Standard</button>
+                  style={packingDetails[customer.customer.id]?.boxType === 'standard' ? activeButtonStyle : inactiveButtonStyle}
+                  onClick={() => updatePackingDetails(customer.customer.id, { boxType: 'standard', packageLength: '6', packageWidth: '6', packageHeight: '6' })}>Standard</button>
                 <button
-                  style={boxType === 'custom' ? activeButtonStyle : inactiveButtonStyle}
-                  onClick={() => { setBoxType('custom'); setPackageLength(''); setPackageWidth(''); setPackageHeight(''); }}>Custom</button>
+                  style={packingDetails[customer.customer.id]?.boxType === 'custom' ? activeButtonStyle : inactiveButtonStyle}
+                  onClick={() => updatePackingDetails(customer.customer.id, { boxType: 'custom', packageLength: '', packageWidth: '', packageHeight: '' })}>Custom</button>
               </div>
             )}
 
             <br />
             <label>
               Length:
-              <input type="number" value={packageLength} onChange={e => setPackageLength(e.target.value)} disabled={packageType === 'polymailer' || boxType === 'standard'} />
+              <input type="number" value={packingDetails[customer.customer.id]?.packageLength || ''} onChange={e => handlePackingDetailChange(customer.customer.id, 'packageLength', e.target.value)} disabled={packingDetails[customer.customer.id]?.packageType === 'polymailer' || packingDetails[customer.customer.id]?.boxType === 'standard'} />
             </label>
             <br />
             <label>
               Width:
-              <input type="number" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} disabled={packageType === 'polymailer' || boxType === 'standard'} />
+              <input type="number" value={packingDetails[customer.customer.id]?.packageWidth || ''} onChange={e => handlePackingDetailChange(customer.customer.id, 'packageWidth', e.target.value)} disabled={packingDetails[customer.customer.id]?.packageType === 'polymailer' || packingDetails[customer.customer.id]?.boxType === 'standard'} />
             </label>
             <br />
             <label>
               Height:
-              <input type="number" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} disabled={packageType === 'polymailer' || boxType === 'standard'} />
+              <input type="number" value={packingDetails[customer.customer.id]?.packageHeight || ''} onChange={e => handlePackingDetailChange(customer.customer.id, 'packageHeight', e.target.value)} disabled={packingDetails[customer.customer.id]?.packageType === 'polymailer' || packingDetails[customer.customer.id]?.boxType === 'standard'} />
             </label>
             <br />
             <label>
               Weight (oz):
-              <input type="number" value={totalWeightOz} onChange={e => setTotalWeightOz(e.target.value)} />
+              <input type="number" value={packingDetails[customer.customer.id]?.totalWeightOz || ''} onChange={e => handlePackingDetailChange(customer.customer.id, 'totalWeightOz', e.target.value)} />
             </label>
             <br />
             <button onClick={() => handleCompleteOrder(customer)}>Complete {customer.customer.name}'s Order</button>
