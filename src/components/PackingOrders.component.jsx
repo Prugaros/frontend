@@ -31,6 +31,7 @@ const PackingOrders = () => {
   const [error, setError] = useState(null);
   const [packed, setPacked] = useState(false);
   const [customers, setCustomers] = useState([]);
+  const [materialSummary, setMaterialSummary] = useState({});
   const [packageType, setPackageType] = useState('polymailer'); // Default to polymailer
   const [packageLength, setPackageLength] = useState('');
   const [packageWidth, setPackageWidth] = useState('');
@@ -70,12 +71,62 @@ const PackingOrders = () => {
     return sortedCustomers;
   };
 
+  const getTotalQuantity = (orders) => {
+    return orders.reduce((total, order) => {
+      return total + order.orderItems.reduce((orderTotal, item) => {
+        return orderTotal + item.quantity;
+      }, 0);
+    }, 0);
+  };
+
+  const groupAllPaidOrdersByCustomer = (orders) => {
+    const groupedOrders = {};
+    orders.forEach(order => {
+      const customerId = order.customer.id;
+      if (!groupedOrders[customerId]) {
+        groupedOrders[customerId] = {
+          customer: order.customer,
+          orders: []
+        };
+      }
+      groupedOrders[customerId].orders.push(order);
+    });
+    return Object.values(groupedOrders);
+  };
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await OrderService.getAll({ groupOrderId: group_order_id });
-        setOrders(response.data);
-        const sortedCustomers = processAndSortOrders(response.data);
+        const response = await OrderService.getAll({ groupOrderId: group_order_id, payment_status: 'Paid' });
+        const allPaidOrders = response.data;
+        setOrders(allPaidOrders);
+
+        const allPaidCustomers = groupAllPaidOrdersByCustomer(allPaidOrders);
+        const summary = {
+          'small poly': 0,
+          'medium poly': 0,
+          'large poly': 0,
+          'normal box': 0,
+          'custom box': 0,
+        };
+
+        allPaidCustomers.forEach(customer => {
+          const totalItems = getTotalQuantity(customer.orders);
+          if (totalItems >= 1 && totalItems <= 2) {
+            summary['small poly']++;
+          } else if (totalItems >= 3 && totalItems <= 6) {
+            summary['medium poly']++;
+          } else if (totalItems >= 7 && totalItems <= 13) {
+            summary['large poly']++;
+          } else if (totalItems >= 14 && totalItems <= 18) {
+            summary['normal box']++;
+          } else if (totalItems > 18) {
+            summary['custom box']++;
+          }
+        });
+        setMaterialSummary(summary);
+
+        const sortedCustomers = processAndSortOrders(allPaidOrders);
         setCustomers(sortedCustomers);
       } catch (err) {
         setError(err.message || 'Failed to fetch orders');
@@ -128,17 +179,22 @@ const PackingOrders = () => {
     return <div>Error: {error}</div>;
   }
 
-  const getTotalQuantity = (orders) => {
-    return orders.reduce((total, order) => {
-      return total + order.orderItems.reduce((orderTotal, item) => {
-        return orderTotal + item.quantity;
-      }, 0);
-    }, 0);
-  };
-
   return (
     <div>
       <h2>Packing Orders for Group Order {group_order_id}</h2>
+      <div className="card my-3">
+        <div className="card-header">
+          Material Summary
+        </div>
+        <ul className="list-group list-group-flush">
+          {Object.entries(materialSummary).map(([material, count]) => (
+            <li key={material} className="list-group-item d-flex justify-content-between align-items-center">
+              {material.charAt(0).toUpperCase() + material.slice(1)}
+              <span className="badge bg-primary rounded-pill">{count}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <Link to={`/shipment-manifest/${group_order_id}`}>Shipment Manifest</Link>
       {packed && <p>All Orders Packed! Continue to <Link to={`/shipment-manifest/${group_order_id}`}>Shipment Manifest</Link></p>}
       {customers.map(customer => (
