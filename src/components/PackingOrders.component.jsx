@@ -97,7 +97,7 @@ const PackingOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await OrderService.getAll({ groupOrderId: group_order_id, payment_status: 'Paid' });
+        const response = await OrderService.getAll({ groupOrderId: group_order_id, paymentStatus: 'Paid' });
         const allPaidOrders = response.data;
         setOrders(allPaidOrders);
 
