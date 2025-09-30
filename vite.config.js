@@ -23,6 +23,11 @@ export default defineConfig(({ mode }) => { // Destructure mode from the config 
           changeOrigin: true,
           secure: false,
         },
+        '/api': {
+          target: env.VITE_BACKEND_URL,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     }
   };

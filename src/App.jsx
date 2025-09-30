@@ -30,6 +30,7 @@ import PrivacyPolicy from './components/PrivacyPolicy.component.jsx';
 import StoreCredit from './components/StoreCredit.component.jsx';
 import GroupOrderSelection from './components/GroupOrderSelection.component.jsx';
 import WebviewService from './services/webview.service.js';
+import DestashListComponent from './components/DestashList.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -188,6 +189,11 @@ function App() {
                         Store Credit
                       </Link>
                     </li>
+                    <li className="nav-item">
+                      <Link to={"/destash-list"} className="nav-link">
+                        Destash List
+                      </Link>
+                    </li>
                   </>
                 )}
               </div>
@@ -264,6 +270,7 @@ function App() {
           <Route path="/packing-orders/:group_order_id" element={<ProtectedRoute><PackingOrders /></ProtectedRoute>} />
           <Route path="/shipment-manifest/:group_order_id" element={<ProtectedRoute><ShipmentManifest /></ProtectedRoute>} />
           <Route path="/store-credit" element={<ProtectedRoute><StoreCredit /></ProtectedRoute>} />
+          <Route path="/destash-list" element={<ProtectedRoute><DestashListComponent /></ProtectedRoute>} />
 
           {/* Redirect unknown protected paths to dashboard, others to login */}
           <Route path="*" element={currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />

@@ -53,4 +53,10 @@ class AuthService {
 }
 
 // Export an instance of the class
-export default new AuthService();
+const authServiceInstance = new AuthService();
+
+export function authHeader() {
+  return authServiceInstance.getAuthHeader();
+}
+
+export default authServiceInstance;
