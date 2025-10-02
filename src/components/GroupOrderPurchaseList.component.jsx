@@ -165,12 +165,13 @@ const GroupOrderPurchaseList = () => {
               </thead>
               <tbody>
                 {items.map(item => (
-                  <tr key={item.productId}>
+                  <tr key={item.productId} style={{ backgroundColor: !item.is_active ? '#ffdddd' : '' }}>
                     <td>{item.productId}</td>
                     <td>
                       <a href={item.product_url} target="_blank" rel="noopener noreferrer">
                         {item.name}
                       </a>
+                      {!item.is_active && <span style={{ color: 'red' }}> (Inactive)</span>}
                     </td>
                     <td>{item.quantity}</td>
                     <td>{item.MSRP}</td>
