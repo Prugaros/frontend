@@ -106,8 +106,14 @@ const OrderDetail = () => {
            <p><strong>Name:</strong> {order.customer?.name || 'N/A'}</p>
            <p><strong>Email:</strong> {order.customer?.email || 'N/A'}</p>
            <p><strong>Address:</strong><br />
-             {order.customer?.street_address || 'N/A'}<br />
-             {order.customer?.city || ''}, {order.customer?.state || ''} {order.customer?.zip || ''}
+             {
+               order.customer?.is_international
+                 ? <div dangerouslySetInnerHTML={{ __html: order.customer.international_address_block.replace(/\n/g, '<br />') }} />
+                 : <>
+                     {order.customer?.street_address || 'N/A'}<br />
+                     {order.customer?.city || ''}, {order.customer?.state || ''} {order.customer?.zip || ''}
+                   </>
+             }
            </p>
         </div>
         <div className="col-md-6">
