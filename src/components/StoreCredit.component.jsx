@@ -56,7 +56,7 @@ const StoreCredit = () => {
 
   const handleSave = async () => {
     try {
-      await StoreCreditService.addStoreCredit(selectedCustomer.id, amount, reason);
+      await StoreCreditService.addStoreCredit(selectedCustomer.id, parseFloat(amount), reason);
       setMessage('Store credit updated successfully.');
       fetchCustomers();
       handleCloseModal();
@@ -81,6 +81,19 @@ const StoreCredit = () => {
       fetchRefunds();
     } catch (err) {
       setError('Failed to credit refund.');
+    }
+  };
+
+  const handleCashRefund = async (customerId) => {
+    try {
+      const customerRefunds = refunds.find(r => r.customer.id === customerId);
+      for (const refund of customerRefunds.refunds) {
+        await RefundService.updateRefundState(refund.id, 'refunded');
+      }
+      setMessage('Cash refund processed successfully.');
+      fetchRefunds();
+    } catch (err) {
+      setError('Failed to process cash refund.');
     }
   };
 
@@ -170,7 +183,8 @@ const StoreCredit = () => {
                   Include Shipping in Refund
                 </label>
               </div>
-              <button className="btn btn-primary btn-sm mt-2" onClick={() => handleCreditRefund(group.customer.id, group.total, group.shipping_cost)}>Credit Total</button>
+              <button className="btn btn-primary btn-sm mt-2 me-2" onClick={() => handleCreditRefund(group.customer.id, group.total, group.shipping_cost)}>Credit</button>
+              <button className="btn btn-success btn-sm mt-2" onClick={() => handleCashRefund(group.customer.id)}>Cash</button>
             </div>
           ))}
         </Tab>
