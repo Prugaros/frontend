@@ -66,6 +66,7 @@
 .search-bar-container {
   flex-grow: 1;
   max-width: 300px;
+  position: relative;
 }
 
 .cart-icon-link {
@@ -92,6 +93,7 @@
   max-width: 300px;
   border-radius: 20px;
   padding-left: 15px;
+  padding-right: 32px; /* make room for the clear button */
   background-color: #4a4a4a; /* Darker input background */
   color: #e0e0e0; /* Light text color */
   border: 1px solid #555;
@@ -99,6 +101,32 @@
 
 .search-bar-container .form-control::placeholder {
   color: #bbb; /* Lighter placeholder text */
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.search-clear-btn:hover {
+  color: #e0e0e0;
+}
+
+.search-results-heading {
+  margin-top: 10px;
+  color: #8ab4f8;
+  border-bottom: 2px solid #8ab4f8;
+  padding-bottom: 5px;
 }
 
 /* Product Container */

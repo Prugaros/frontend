@@ -38,10 +38,17 @@ class WebviewService {
     return axios.get(API_URL + `brand-data/${brandId}`, config);
   }
 
+  getAllProducts() {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' }
+    };
+    return axios.get(API_URL + 'all-products', config);
+  }
+
   // Send updated cart data back to the backend
   // items should be an object like { productId: quantity, ... }
   updateCart(psid, items) {
-     const config = {
+    const config = {
       headers: {
         'ngrok-skip-browser-warning': 'any-value'
       },

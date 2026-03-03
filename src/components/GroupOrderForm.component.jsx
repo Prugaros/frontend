@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import GroupOrderService from '../services/groupOrder.service';
-import ProductService from '../services/product.service'; // Use ProductService
 import { useParams, useNavigate } from 'react-router-dom';
 
 const GroupOrderForm = () => {
@@ -8,26 +7,12 @@ const GroupOrderForm = () => {
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
-  const initialGroupOrderState = { name: '', start_date: '', end_date: '', productIds: [], custom_message: '', postToFacebook: true };
+  const initialGroupOrderState = { name: '', start_date: '', end_date: '', custom_message: '', postToFacebook: true };
   const [groupOrder, setGroupOrder] = useState(initialGroupOrderState);
-  const [allProducts, setAllProducts] = useState([]); // To populate product selection
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [productsLoading, setProductsLoading] = useState(true); // Separate loading for products
 
   useEffect(() => {
-    // Fetch all available ACTIVE products for selection
-    setProductsLoading(true);
-    ProductService.getAll({ activeOnly: true }) // Fetch only active products
-      .then(response => {
-          setAllProducts(response.data);
-          setProductsLoading(false);
-      })
-      .catch(e => {
-          setMessage("Error fetching products: " + (e.response?.data?.message || e.message));
-          setProductsLoading(false);
-      });
-
     // If editing, fetch the specific group order details
     if (isEditing) {
       setLoading(true);
@@ -37,13 +22,12 @@ const GroupOrderForm = () => {
           const formattedStartDate = data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '';
           const formattedEndDate = data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '';
           setGroupOrder({
-              ...initialGroupOrderState, // Start fresh
-              name: data.name || '',
-              start_date: formattedStartDate,
-              end_date: formattedEndDate,
-              productIds: data.products?.map(p => p.id) || [], // Extract product IDs
-              custom_message: data.custom_message || '',
-              postToFacebook: data.postToFacebook !== undefined ? data.postToFacebook : true
+            ...initialGroupOrderState, // Start fresh
+            name: data.name || '',
+            start_date: formattedStartDate,
+            end_date: formattedEndDate,
+            custom_message: data.custom_message || '',
+            postToFacebook: data.postToFacebook !== undefined ? data.postToFacebook : true
           });
           setLoading(false);
         })
@@ -52,8 +36,8 @@ const GroupOrderForm = () => {
           setLoading(false);
         });
     } else {
-        // Reset to initial state if navigating from edit to new
-        setGroupOrder(initialGroupOrderState);
+      // Reset to initial state if navigating from edit to new
+      setGroupOrder(initialGroupOrderState);
     }
   }, [id, isEditing]);
 
@@ -62,30 +46,18 @@ const GroupOrderForm = () => {
     setGroupOrder({ ...groupOrder, [name]: type === 'checkbox' ? checked : value });
   };
 
-  const handleProductSelectionChange = (event) => {
-      const { options } = event.target;
-      const selectedProductIds = [];
-      for (let i = 0, l = options.length; i < l; i++) {
-          if (options[i].selected) {
-              selectedProductIds.push(parseInt(options[i].value));
-          }
-      }
-      setGroupOrder({ ...groupOrder, productIds: selectedProductIds });
-  };
-
   const handleSubmit = (event) => {
     event.preventDefault();
     setLoading(true);
     setMessage('');
 
     const dataToSubmit = {
-        name: groupOrder.name,
-        start_date: groupOrder.start_date || null,
-        end_date: groupOrder.end_date || null,
-        productIds: groupOrder.productIds,
-        custom_message: groupOrder.custom_message,
-        postToFacebook: groupOrder.postToFacebook
-        // Status is handled by backend (defaults to Draft on create, updated via Start/End actions)
+      name: groupOrder.name,
+      start_date: groupOrder.start_date || null,
+      end_date: groupOrder.end_date || null,
+      custom_message: groupOrder.custom_message,
+      postToFacebook: groupOrder.postToFacebook
+      // Status is handled by backend (defaults to Draft on create, updated via Start/End actions)
     };
 
     const saveAction = isEditing
@@ -156,46 +128,22 @@ const GroupOrderForm = () => {
         </div>
 
         <div className="form-check mb-3">
-            <input
-                className="form-check-input"
-                type="checkbox"
-                id="postToFacebook"
-                name="postToFacebook"
-                checked={groupOrder.postToFacebook}
-                onChange={handleInputChange}
-            />
-            <label className="form-check-label" htmlFor="postToFacebook">
-                Post to Facebook when started
-            </label>
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="postToFacebook"
+            name="postToFacebook"
+            checked={groupOrder.postToFacebook}
+            onChange={handleInputChange}
+          />
+          <label className="form-check-label" htmlFor="postToFacebook">
+            Post to Facebook when started
+          </label>
         </div>
-
-        <div className="mb-3">
-            <label htmlFor="products" className="form-label">Select Products for this Group Order</label>
-            {productsLoading ? <p>Loading products...</p> :
-                <select
-                    multiple
-                    className="form-control"
-                    id="products"
-                    name="products"
-                    value={groupOrder.productIds.map(String)} // Value needs array of strings
-                    onChange={handleProductSelectionChange}
-                    style={{ height: '250px' }}
-                    disabled={loading}
-                >
-                    {allProducts.map(product => (
-                        <option key={product.id} value={product.id}>
-                            {product.name} (${product.price})
-                        </option>
-                    ))}
-                </select>
-            }
-            <small className="form-text text-muted">Hold Ctrl (or Cmd on Mac) to select multiple products.</small>
-        </div>
-
 
         {message && <div className="alert alert-danger">{message}</div>}
 
-        <button type="submit" className="btn btn-primary" disabled={loading || productsLoading}>
+        <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? 'Saving...' : 'Save Group Order'}
         </button>
         <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/group-orders')}>

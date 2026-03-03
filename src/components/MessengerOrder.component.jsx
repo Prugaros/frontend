@@ -56,6 +56,8 @@ const MessengerOrder = () => {
   const [featuredData, setFeaturedData] = useState({ featuredCollections: [], otherFeaturedItems: [] });
   const [brandDataCache, setBrandDataCache] = useState({}); // Cache for brand data
   const [loadingTab, setLoadingTab] = useState(false);
+  const [allProducts, setAllProducts] = useState(null);   // null = not yet fetched
+  const [allProductsLoading, setAllProductsLoading] = useState(false);
 
   // Restore scroll position after loading and tab content is ready
   useEffect(() => {
@@ -67,7 +69,7 @@ const MessengerOrder = () => {
           window.scrollTo(0, parseInt(scrollPosition, 10));
           sessionStorage.removeItem('messengerOrderScrollPosition');
           sessionStorage.removeItem('activeTab'); // Clean up after use
-        }, 100); 
+        }, 100);
       }
     }
   }, [loading, loadingTab]);
@@ -96,13 +98,16 @@ const MessengerOrder = () => {
           initialCart[productId] = quantity;
         });
         setCart(initialCart);
+        if (response.data.prunedItems && response.data.prunedItems.length > 0) {
+          alert(`The following items were removed from your cart because they are no longer available:\n\n${response.data.prunedItems.join('\n')}`);
+        }
         // Now fetch featured data
         return WebviewService.getFeaturedData();
       })
       .then(response => {
         setFeaturedData({
-            featuredCollections: response.data.featuredCollections || [],
-            otherFeaturedItems: response.data.otherFeaturedItems || []
+          featuredCollections: response.data.featuredCollections || [],
+          otherFeaturedItems: response.data.otherFeaturedItems || []
         });
         setLoading(false);
       })
@@ -131,6 +136,35 @@ const MessengerOrder = () => {
     }
   }, [activeTab, brandDataCache]);
 
+  // Lazily fetch all products the first time the user types in the search bar
+  useEffect(() => {
+    if (searchTerm && allProducts === null && !allProductsLoading) {
+      setAllProductsLoading(true);
+      WebviewService.getAllProducts()
+        .then(response => {
+          setAllProducts(response.data.products || []);
+          setAllProductsLoading(false);
+        })
+        .catch(e => {
+          console.error('Error fetching all products for search:', e);
+          setAllProductsLoading(false);
+        });
+    }
+  }, [searchTerm, allProducts, allProductsLoading]);
+
+  // Filtered results for global search
+  const searchResults = useMemo(() => {
+    if (!searchTerm || allProducts === null) return [];
+    const term = searchTerm.toLowerCase();
+    return allProducts.filter(p =>
+      !p.is_blacklisted && (
+        p.name.toLowerCase().includes(term) ||
+        p.brand?.name?.toLowerCase().includes(term) ||
+        p.collection?.name?.toLowerCase().includes(term)
+      )
+    );
+  }, [searchTerm, allProducts]);
+
 
   const handleQuantityChange = (productId, newQuantity) => {
     const quantity = Math.max(0, parseInt(newQuantity));
@@ -149,20 +183,20 @@ const MessengerOrder = () => {
   const allProductsForCart = useMemo(() => {
     const brandCollections = Object.values(brandDataCache).flatMap(brand => brand.collections || []);
     const otherBrandItems = Object.values(brandDataCache).flatMap(brand => brand.otherBrandItems || []);
-    
+
     const allCollections = [
-        ...(featuredData.featuredCollections || []),
-        ...brandCollections
+      ...(featuredData.featuredCollections || []),
+      ...brandCollections
     ];
-    
+
     const allItems = [
-        ...(featuredData.otherFeaturedItems || []),
-        ...otherBrandItems,
-        ...allCollections.flatMap(c => c.products || [])
+      ...(featuredData.otherFeaturedItems || []),
+      ...otherBrandItems,
+      ...allCollections.flatMap(c => c.products || [])
     ];
-    
+
     return _.uniqBy(allItems, 'id');
-}, [featuredData, brandDataCache]);
+  }, [featuredData, brandDataCache]);
 
   const calculateTotal = () => {
     return Object.entries(cart).reduce((total, [productId, quantity]) => {
@@ -197,32 +231,32 @@ const MessengerOrder = () => {
 
   const renderCollections = (collections) => {
     if (!collections || collections.length === 0) {
-        return <p className="text-muted">No items found for this brand.</p>;
+      return <p className="text-muted">No items found for this brand.</p>;
     }
 
     const filteredCollections = collections
-        .map(collection => ({
-            ...collection,
-            products: (collection.products || []).filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-        }))
-        .filter(collection => collection.products.length > 0);
+      .map(collection => ({
+        ...collection,
+        products: (collection.products || []).filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      }))
+      .filter(collection => collection.products.length > 0);
 
     if (filteredCollections.length === 0) {
-        return <p className="text-muted">No products found matching your search.</p>;
+      return <p className="text-muted">No products found matching your search.</p>;
     }
 
     return filteredCollections.map(collection => (
-        <div key={collection.id} className="mb-4">
-            <h4>{collection.name || collection.Name}</h4>
-            <div className="product-grid">
-                {collection.products.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
-            </div>
+      <div key={collection.id} className="mb-4">
+        <h4>{collection.name || collection.Name}</h4>
+        <div className="product-grid">
+          {collection.products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))}
         </div>
+      </div>
     ));
   };
-  
+
   const ProductCard = ({ product }) => (
     <div key={product.id} className="product-container">
       <Link to={`/product-detail/${product.id}?psid=${psid}`} className="product-image-link" onClick={handleProductLinkClick}>
@@ -249,8 +283,8 @@ const MessengerOrder = () => {
     </div>
   );
 
-  const activeBrandName = activeTab === 'featured' 
-    ? 'Featured' 
+  const activeBrandName = activeTab === 'featured'
+    ? 'Featured'
     : brands.find(b => b.id === activeTab)?.name || 'Select a Brand';
 
   if (loading) return <div className="container mt-3"><p>Loading order details...</p></div>;
@@ -277,9 +311,19 @@ const MessengerOrder = () => {
             <input
               type="text"
               className="form-control"
-              placeholder="Search by name..."
+              placeholder="Search all products..."
+              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button
+                className="search-clear-btn"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
           <Link to={`/cart?psid=${psid}`} className="cart-icon-link">
             <i className="fas fa-shopping-cart"></i>
@@ -292,39 +336,61 @@ const MessengerOrder = () => {
         {error && <div className="alert alert-danger">{error}</div>}
 
         <div className="tab-content mt-3">
-          {activeTab === 'featured' ? (
+          {searchTerm ? (
+            // --- Global Search Results View ---
             <div>
-            {renderCollections(featuredData.featuredCollections)}
-            {featuredData.otherFeaturedItems.length > 0 && (
-              <>
-                <h4>Other Featured Items</h4>
-                <div className="product-grid">
-                    {featuredData.otherFeaturedItems.filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
-                        <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          loadingTab ? <p>Loading brand items...</p> : (
+              <h4 className="search-results-heading">
+                {allProductsLoading
+                  ? 'Searching…'
+                  : `Search Results (${searchResults.length})`
+                }
+              </h4>
+              {!allProductsLoading && searchResults.length === 0 && (
+                <p className="text-muted">No products found matching "{searchTerm}".</p>
+              )}
+              <div className="product-grid">
+                {searchResults.map(product => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          ) : activeTab === 'featured' ? (
+            // --- Featured Tab View ---
             <div>
-              {renderCollections(brandDataCache[activeTab]?.collections || [])}
-              {brandDataCache[activeTab]?.otherBrandItems?.length > 0 && (
+              {renderCollections(featuredData.featuredCollections)}
+              {featuredData.otherFeaturedItems.length > 0 && (
                 <>
-                  <h4>Other {brandDataCache[activeTab]?.name} Items</h4>
-                    <div className="product-grid">
-                        {brandDataCache[activeTab].otherBrandItems
-                        .filter(p => !p.is_blacklisted && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                  <h4>Other Featured Items</h4>
+                  <div className="product-grid">
+                    {featuredData.otherFeaturedItems
+                      .filter(p => !p.is_blacklisted)
+                      .map(product => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                  </div>
                 </>
               )}
             </div>
-          )
-        )}
+          ) : (
+            // --- Brand Tab View ---
+            loadingTab ? <p>Loading brand items...</p> : (
+              <div>
+                {renderCollections(brandDataCache[activeTab]?.collections || [])}
+                {brandDataCache[activeTab]?.otherBrandItems?.length > 0 && (
+                  <>
+                    <h4>Other {brandDataCache[activeTab]?.name} Items</h4>
+                    <div className="product-grid">
+                      {brandDataCache[activeTab].otherBrandItems
+                        .filter(p => !p.is_blacklisted)
+                        .map(product => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
