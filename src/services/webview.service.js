@@ -121,6 +121,21 @@ class WebviewService {
     };
     return axios.post(API_URL + 'set-group-order', { psid, groupOrderId }, config);
   }
+
+  getDestashProfile(psid) {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' },
+      params: { psid }
+    };
+    return axios.get(API_URL + 'destash-profile', config);
+  }
+
+  signupDestash(psid, email) {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' }
+    };
+    return axios.post(API_URL + 'signup-destash', { psid, email }, config);
+  }
 }
 
 export default new WebviewService();

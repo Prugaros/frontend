@@ -31,6 +31,7 @@ import StoreCredit from './components/StoreCredit.component.jsx';
 import GroupOrderSelection from './components/GroupOrderSelection.component.jsx';
 import WebviewService from './services/webview.service.js';
 import DestashListComponent from './components/DestashList.component.jsx';
+import DestashSignup from './components/DestashSignup.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -48,12 +49,13 @@ function App() {
   const [error, setError] = useState('');
 
   const isWebview = location.pathname === '/messenger-order' ||
-                    location.pathname === '/cart' ||
-                    location.pathname.startsWith('/product-detail/') ||
-                    location.pathname === '/close-notification' ||
-                    location.pathname === '/address' ||
-                    location.pathname === '/payment' ||
-                    location.pathname === '/order-submitted';
+    location.pathname === '/cart' ||
+    location.pathname.startsWith('/product-detail/') ||
+    location.pathname === '/close-notification' ||
+    location.pathname === '/address' ||
+    location.pathname === '/payment' ||
+    location.pathname === '/order-submitted' ||
+    location.pathname === '/destash-signup';
 
   const fetchWebviewData = (psidParam) => {
     setWebviewLoading(true);
@@ -237,6 +239,7 @@ function App() {
           <Route path="/payment" element={<Payment />} />
           <Route path="/order-submitted" element={<OrderSubmitted />} />
           <Route path="/product-detail/:productId" element={<ProductDetail />} /> {/* New Product Detail Route */}
+          <Route path="/destash-signup" element={<DestashSignup />} />
           <Route path="/close-notification" element={<CloseNotification />} /> {/* New Close Notification Route */}
 
           {/* Protected Routes */}
