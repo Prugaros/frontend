@@ -28,7 +28,7 @@ const Payment = () => {
     const handlePaymentSent = () => {
         WebviewService.paymentSent(psid)
             .then(() => {
-                navigate(`/order-submitted?psid=${psid}`);
+                navigate(`/order-status?psid=${psid}`);
             })
             .catch(e => {
                 setError(e.response?.data?.message || e.message || "Error processing payment.");

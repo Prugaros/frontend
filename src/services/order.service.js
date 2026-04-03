@@ -19,6 +19,11 @@ class OrderService {
     return axios.get(API_URL + id, { headers: AuthService.getAuthHeader() });
   }
 
+  // Update an entire order
+  update(id, data) {
+    return axios.put(API_URL + id, data, { headers: AuthService.getAuthHeader() });
+  }
+
   // Update shipping manifest details for a group order
   updateShippingManifest(group_order_id, data) {
     return axios.put(API_URL + 'shipment-manifest/' + group_order_id, data, { headers: AuthService.getAuthHeader() });

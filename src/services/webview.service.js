@@ -136,6 +136,14 @@ class WebviewService {
     };
     return axios.post(API_URL + 'signup-destash', { psid, email }, config);
   }
+
+  getOrderStatus(psid) {
+    const config = {
+      headers: { 'ngrok-skip-browser-warning': 'any-value' },
+      params: { psid }
+    };
+    return axios.get(API_URL + 'order-status', config);
+  }
 }
 
 export default new WebviewService();

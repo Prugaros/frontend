@@ -81,7 +81,7 @@ const AddressForm = () => {
             const { items, subtotal, appliedCredit } = orderSummary;
             let shipping = 0;
             if (country === 'United States') {
-                shipping = hasPaidOrders ? 0 : 5;
+                shipping = hasPaidOrders ? 0 : 5.50;
             } else {
                 const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
                 shipping = totalQuantity * 1.70;

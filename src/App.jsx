@@ -32,6 +32,7 @@ import GroupOrderSelection from './components/GroupOrderSelection.component.jsx'
 import WebviewService from './services/webview.service.js';
 import DestashListComponent from './components/DestashList.component.jsx';
 import DestashSignup from './components/DestashSignup.component.jsx';
+import OrderStatus from './components/OrderStatus.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -55,7 +56,8 @@ function App() {
     location.pathname === '/address' ||
     location.pathname === '/payment' ||
     location.pathname === '/order-submitted' ||
-    location.pathname === '/destash-signup';
+    location.pathname === '/destash-signup' ||
+    location.pathname === '/order-status';
 
   const fetchWebviewData = (psidParam) => {
     setWebviewLoading(true);
@@ -240,7 +242,8 @@ function App() {
           <Route path="/order-submitted" element={<OrderSubmitted />} />
           <Route path="/product-detail/:productId" element={<ProductDetail />} /> {/* New Product Detail Route */}
           <Route path="/destash-signup" element={<DestashSignup />} />
-          <Route path="/close-notification" element={<CloseNotification />} /> {/* New Close Notification Route */}
+          <Route path="/close-notification" element={<CloseNotification />} />
+          <Route path="/order-status" element={<OrderStatus />} />
 
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />

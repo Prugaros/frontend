@@ -58,6 +58,7 @@ const MessengerOrder = () => {
   const [loadingTab, setLoadingTab] = useState(false);
   const [allProducts, setAllProducts] = useState(null);   // null = not yet fetched
   const [allProductsLoading, setAllProductsLoading] = useState(false);
+  const [showDecisionScreen, setShowDecisionScreen] = useState(false);
 
   // Restore scroll position after loading and tab content is ready
   useEffect(() => {
@@ -98,6 +99,9 @@ const MessengerOrder = () => {
           initialCart[productId] = quantity;
         });
         setCart(initialCart);
+        if (response.data.hasSubmittedOrderForActiveGroupOrder) {
+          setShowDecisionScreen(true);
+        }
         if (response.data.prunedItems && response.data.prunedItems.length > 0) {
           alert(`The following items were removed from your cart because they are no longer available:\n\n${response.data.prunedItems.join('\n')}`);
         }
@@ -289,6 +293,29 @@ const MessengerOrder = () => {
 
   if (loading) return <div className="container mt-3"><p>Loading order details...</p></div>;
   if (error) return <div className="container mt-3"><div className="alert alert-danger">{error}</div></div>;
+
+  if (showDecisionScreen) {
+    return (
+      <div className="container mt-5 text-center decision-screen" style={{maxWidth: '400px'}}>
+        <h3 className="mb-4">You already placed an order for this group order</h3>
+        <p className="text-muted mb-4">Would you like to continue shopping or view your current order?</p>
+        <button 
+            className="btn btn-primary d-block w-100 mb-3 py-3" 
+            style={{ fontSize: '1.1rem', borderRadius: '8px', fontWeight: 'bold' }}
+            onClick={() => setShowDecisionScreen(false)}
+        >
+          Continue shopping (add more items)
+        </button>
+        <button 
+            className="btn btn-outline-secondary d-block w-100 py-3" 
+            style={{ fontSize: '1.1rem', borderRadius: '8px', fontWeight: 'bold' }}
+            onClick={() => window.location.href = `/order-status?psid=${psid}`}
+        >
+          View my order
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="container">
