@@ -4,7 +4,7 @@ import { Draggable } from '@hello-pangea/dnd';
 const DraggableImage = ({ imageUrl, file, index, isNew, totalExistingImages }) => {
   // If it's a new file, 'file' is the File object itself. If it's an existing URL, 'imageUrl' is the ID.
   const draggableId = isNew ? `${file.name}-${file.lastModified}-${index}` : imageUrl; // Use a stable ID for new files
-  const src = isNew ? URL.createObjectURL(file) : imageUrl; // Use 'file' directly for new files
+  const src = isNew ? URL.createObjectURL(file) : `${import.meta.env.VITE_BACKEND_URL}${imageUrl}`; // Use 'file' directly for new files
   const displayIndex = isNew ? totalExistingImages + index : index;
 
   return (

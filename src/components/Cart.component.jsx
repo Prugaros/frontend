@@ -160,7 +160,7 @@ const Cart = () => {
                 <div key={productId} className="product-container">
                   {product.images && product.images.length > 0 && (
                     <img
-                      src={product.images[0]}
+                      src={`${import.meta.env.VITE_BACKEND_URL}${product.images[0]}`}
                       alt={product.name}
                       className="product-image"
                     />
