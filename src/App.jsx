@@ -33,6 +33,7 @@ import WebviewService from './services/webview.service.js';
 import DestashListComponent from './components/DestashList.component.jsx';
 import DestashSignup from './components/DestashSignup.component.jsx';
 import OrderStatus from './components/OrderStatus.component.jsx';
+import BroadcastModal from './components/BroadcastModal.component.jsx';
 
 // Placeholder components
 const Dashboard = () => <h2>Admin Dashboard</h2>;
@@ -48,6 +49,7 @@ function App() {
   const [needsGroupOrderSelection, setNeedsGroupOrderSelection] = useState(false);
   const [isWebviewLoading, setWebviewLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showBroadcast, setShowBroadcast] = useState(false);
 
   const isWebview = location.pathname === '/messenger-order' ||
     location.pathname === '/cart' ||
@@ -203,11 +205,37 @@ function App() {
               </div>
 
               {currentUser ? (
-                <div className="navbar-nav ms-auto">
+                <div className="navbar-nav ms-auto" style={{ alignItems: 'center', gap: '4px' }}>
                   <li className="nav-item">
                     <span className="nav-link">
                       {currentUser.username}
                     </span>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      id="broadcast-nav-btn"
+                      onClick={() => setShowBroadcast(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #7c3aed, #c084fc)',
+                        border: 'none',
+                        color: '#fff',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        boxShadow: '0 2px 10px rgba(124,58,237,0.4)',
+                        transition: 'opacity 0.15s, transform 0.1s',
+                        margin: '4px 8px',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                      📢 Broadcast
+                    </button>
                   </li>
                   <li className="nav-item">
                     <a href="/login" className="nav-link" onClick={logOut}>
@@ -282,6 +310,11 @@ function App() {
           <Route path="*" element={currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
         </Routes>
       </div>
+
+      {/* Broadcast Modal */}
+      {showBroadcast && currentUser && (
+        <BroadcastModal onClose={() => setShowBroadcast(false)} />
+      )}
     </div>
   );
 }
